@@ -4,7 +4,7 @@ test.describe('Flujo de Agendamiento - Paso 2 (Doctor y Especialidad)', () => {
   
   test('Debe seleccionar doctor, modalidad, especialidad, fecha/hora y avanzar al Paso 3', async ({ page }) => {
     // 1. Navegar a la vista con la ruta absoluta y el HashRouter
-    await page.goto('http://localhost:5173/#/reserva/agenda');
+    await page.goto('/#/reserva/agenda');
 
     // 2. Seleccionar Doctor (haciendo clic en el label que contiene el texto visible)
     await page.locator('label').filter({ hasText: "Maximo Tul 'Onazzo" }).click();

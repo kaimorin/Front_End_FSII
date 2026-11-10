@@ -4,7 +4,7 @@ test.describe('Flujo de Agendamiento - Paso 1 (Datos Personales)', () => {
   
   test('Debe llenar el formulario, guardar en SessionStorage y avanzar al Paso 2', async ({ page }) => {
     // 1. Navegar a la vista con la ruta absoluta y el HashRouter
-    await page.goto('http://localhost:5173/#/reserva/datos');
+    await page.goto('/#/reserva/datos');
     
     // 2. Llenar inputs de texto basados en sus placeholders exactos
     await page.getByPlaceholder('Nombre*').fill('Yvanni');

@@ -4,7 +4,7 @@ test.describe('Flujo de Agendamiento - Paso 3 (Pago y Confirmación)', () => {
   
   test('Debe seleccionar pasarela, validar montos exactos y finalizar pago', async ({ page }) => {
     // 1. Navegar a la vista de pago
-    await page.goto('http://localhost:5173/#/reserva/pago');
+    await page.goto('/#/reserva/pago');
 
     // 2. Validar que Webpay esté seleccionado por defecto
     const radioWebpay = page.locator('input[name="metodo_pago"][value="webpay"]');
