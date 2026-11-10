@@ -5,6 +5,7 @@ import process from 'node:process'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     !process.env.VITEST && babel({ presets: [reactCompilerPreset()] }),
