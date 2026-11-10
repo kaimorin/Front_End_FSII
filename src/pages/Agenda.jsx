@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import banner from '../assets/banner-agenda.jpg'
+import { API_URL } from '../config'
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -9,6 +10,35 @@ const MESES = [
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const HORAS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const MINUTOS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]
+
+
+// Lista de respaldo: se usa si el API no responde (y en los tests)
+const DOCTORES_BASE = [
+  {
+    id: 1,
+    valor: 'Maria de Judas',
+    nombre: 'Maria de Judas',
+    descripcion: 'Experta en el manejo de enfermedades metabólicas. Crea dietas terapéuticas para controlar condiciones como diabetes, resistencia a la insulina e hipertensión.',
+  },
+  {
+    id: 2,
+    valor: 'Maximo Tul Onazzo',
+    nombre: "Maximo Tul 'Onazzo",
+    descripcion: 'Enfocado en la recomposición corporal y el rendimiento físico. Diseña planes para aumentar masa muscular, mejorar la recuperación y optimizar la energía.',
+  },
+  {
+    id: 3,
+    valor: 'Mario Di West',
+    nombre: "Mario Di 'West",
+    descripcion: 'Centrado en la pérdida de grasa sostenible y la educación alimentaria. Trabaja en modificar hábitos a largo plazo sin utilizar dietas extremas o restrictivas.',
+  },
+  {
+    id: 4,
+    valor: 'Shaqueal Oneal',
+    nombre: "Shaqueal O'neal",
+    descripcion: 'Experto en el microbioma intestinal. Su enfoque está en tratar inflamaciones, síndrome de intestino irritable y alergias alimentarias para mejorar la digestión.',
+  },
+]
 
 function primerDiaDisponible() {
   const d = new Date()
@@ -38,6 +68,32 @@ function Agenda() {
   const [minuto, setMinuto] = useState(0)
   const [ampm, setAmpm] = useState('AM')
   const [error, setError] = useState('')
+
+  
+  const [doctores, setDoctores] = useState(DOCTORES_BASE)
+
+  // Pide los doctores activos al back; si falla, se queda la lista de respaldo
+  useEffect(() => {
+    async function cargarDoctores() {
+      try {
+        const res = await fetch(`${API_URL}/especialistas/activos`)
+        const lista = await res.json()
+        if (Array.isArray(lista) && lista.length > 0) {
+          setDoctores(
+            lista.map((d) => ({
+              id: d.id,
+              valor: d.nombre,
+              nombre: d.nombre,
+              descripcion: d.descripcion,
+            }))
+          )
+        }
+      } catch {
+        // sin conexión: se mantiene la lista de respaldo
+      }
+    }
+    cargarDoctores()
+  }, [])
 
 
   const horaTexto = `${hora}:${String(minuto).padStart(2, '0')} ${ampm}`
@@ -131,42 +187,16 @@ function Agenda() {
 
       <section className="contenedor-agenda">
         <form id="formAgenda" className="columna-doctores" onSubmit={siguiente}>
-          <label className="tarjeta-radio-doc">
-            <input type="radio" name="doctor" value="Maria de Judas" defaultChecked />
-            <div className="circulo-check"></div>
-            <div className="info-doc">
-              <strong>Maria de Judas</strong>
-              <p>Experta en el manejo de enfermedades metabólicas. Crea dietas terapéuticas para controlar condiciones como diabetes, resistencia a la insulina e hipertensión.</p>
-            </div>
-          </label>
-
-          <label className="tarjeta-radio-doc">
-            <input type="radio" name="doctor" value="Maximo Tul Onazzo" />
-            <div className="circulo-check"></div>
-            <div className="info-doc">
-              <strong>Maximo Tul 'Onazzo</strong>
-              <p>Enfocado en la recomposición corporal y el rendimiento físico. Diseña planes para aumentar masa muscular, mejorar la recuperación y optimizar la energía.</p>
-            </div>
-          </label>
-
-          <label className="tarjeta-radio-doc">
-            <input type="radio" name="doctor" value="Mario Di West" />
-            <div className="circulo-check"></div>
-            <div className="info-doc">
-              <strong>Mario Di 'West</strong>
-              <p>Centrado en la pérdida de grasa sostenible y la educación alimentaria. Trabaja en modificar hábitos a largo plazo sin utilizar dietas extremas o restrictivas.</p>
-            </div>
-          </label>
-
-          <label className="tarjeta-radio-doc">
-            <input type="radio" name="doctor" value="Shaqueal Oneal" />
-            <div className="circulo-check"></div>
-            <div className="info-doc">
-              <strong>Shaqueal O'neal</strong>
-              <p>Experto en el microbioma intestinal. Su enfoque está en tratar inflamaciones, síndrome de intestino irritable y alergias alimentarias para mejorar la digestión.</p>
-            </div>
-          </label>
-
+                    {doctores.map((d, i) => (
+            <label className="tarjeta-radio-doc" key={d.id}>
+              <input type="radio" name="doctor" value={d.valor} defaultChecked={i === 0} />
+              <div className="circulo-check"></div>
+              <div className="info-doc">
+                <strong>{d.nombre}</strong>
+                <p>{d.descripcion}</p>
+              </div>
+            </label>
+          ))}
           <div className="fila-modalidad">
             <label className="tarjeta-radio-modalidad">
               <input type="radio" name="modalidad" value="Presencial" defaultChecked />
