@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Correr tests e2e (Playwright)'
+        type: boolean
+        default: true
 
 jobs:
   test:
@@ -22,9 +27,11 @@ jobs:
         run: npm run test:run
 
       - name: Instalar navegador de Playwright
+        if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') && (github.event_name != 'workflow_dispatch' || inputs.run_e2e) }}
         run: npx playwright install --with-deps chromium
 
       - name: Tests e2e (Playwright)
+        if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') && (github.event_name != 'workflow_dispatch' || inputs.run_e2e) }}
         run: npm run test:e2e
 
   deploy:

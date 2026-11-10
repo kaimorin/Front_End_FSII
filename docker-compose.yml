@@ -1,0 +1,9 @@
+services:
+  front:
+    build: .
+    container_name: nutrivida-front
+    ports:
+      - "80:80"
+    environment:
+      BACKEND_URL: http://54.173.24.158/:9005
+    restart: unless-stopped
