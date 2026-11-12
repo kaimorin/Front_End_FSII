@@ -5,6 +5,14 @@ test.describe('Flujo de Agendamiento - Paso 3 (Pago y Confirmación)', () => {
   test('Debe seleccionar pasarela, validar montos exactos y finalizar pago', async ({ page }) => {
     // 1. Navegar a la vista de pago
     await page.goto('/#/reserva/pago');
+        // Simula sesión, reserva guardada y respuestas del back
+    await page.evaluate(() => {
+      localStorage.setItem('token', 'token-falso')
+      localStorage.setItem('usuario', JSON.stringify({ rol: 'PACIENTE' }))
+      sessionStorage.setItem('cita', JSON.stringify({ doctor: 'Maria de Judas', modalidad: 'Online', especialidad: 'control-peso', fecha: 'Lunes, 10 de marzo de 2025', hora: '10:00 AM' }))
+      sessionStorage.setItem('datosPaciente', JSON.stringify({ nombre: 'Yvanni', apellido: 'Muñoz', rut: '12345678K', telefono: '+56 9 12345678', comuna: 'providencia', ciudad: 'Santiago', patologias: '', destinatario: 'para-mi' }))
+    })
+    await page.route('**/api/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
 
     // 2. Validar que Webpay esté seleccionado por defecto
     const radioWebpay = page.locator('input[name="metodo_pago"][value="webpay"]');

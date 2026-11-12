@@ -1,6 +1,81 @@
-import { Link } from "react-router"
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { apiFetch, formatearRut } from '../api'
+import {
+  validarCorreo,
+  validarNombre,
+  validarApellido,
+  validarTelefono,
+  validarRut,
+  validarClave,
+  validarRepetirClave,
+} from '../validations'
 
 function Registro(){
+    const navigate = useNavigate()
+    const [errores, setErrores] = useState({})
+    const [errorGeneral, setErrorGeneral] = useState('')
+
+    async function registrar(e) {
+        e.preventDefault()
+        setErrorGeneral('')
+
+        const f = new FormData(e.currentTarget)
+        const correo = f.get('correo')
+        const nombre = f.get('nombre')
+        const apellido = f.get('apellido')
+        const telefono = f.get('telefono')
+        const rut = f.get('rut').replace(/[^0-9kK]/g, '').toUpperCase() // acepta 12.345.678-9 o 12345678K
+        const clave = f.get('clave')
+        const repetir = f.get('repetir')
+
+        const resultados = {
+            correo: validarCorreo(correo),
+            nombre: validarNombre(nombre),
+            apellido: validarApellido(apellido),
+            telefono: validarTelefono(telefono),
+            rut: validarRut(rut),
+            clave: validarClave(clave),
+            repetir: validarRepetirClave(repetir, clave),
+        }
+
+        const nuevosErrores = {}
+        let hayError = false
+        for (const campo in resultados) {
+            if (!resultados[campo].valido) {
+                nuevosErrores[campo] = resultados[campo].mensaje
+                hayError = true
+            }
+        }
+        setErrores(nuevosErrores)
+        if (hayError) return
+
+        try {
+            const res = await apiFetch('/usuarios/registro', {
+                method: 'POST',
+                body: JSON.stringify({
+                    nombre,
+                    apellido,
+                    correo,
+                    rut: formatearRut(rut), // el back exige 12.345.678-9
+                    telefono: `+56 9 ${telefono}`,
+                    clave,
+                    recibirNoticias: f.get('noticias') === 'on',
+                }),
+            })
+            if (res.status === 409) {
+                setErrorGeneral('Ya existe una cuenta con ese correo o RUT.')
+                return
+            }
+            if (!res.ok) {
+                setErrorGeneral('No se pudo crear la cuenta. Revisa los datos.')
+                return
+            }
+            navigate('/login')
+        } catch {
+            setErrorGeneral('No se pudo conectar con el servidor.')
+        }
+    }
 
     return(  <main>
 
@@ -17,25 +92,25 @@ function Registro(){
           <p className="frase-cursiva">Regístrate y disfruta de nuestros beneficios y una experiencia más rápida y sencilla.</p>
         </div>
 
-        <form id="formRegistro" noValidate>
+        <form id="formRegistro" noValidate onSubmit={registrar}>
        
           <div className="campo">
             <label htmlFor="correo">Correo Electronico:</label>
-            <input type="email" id="correo" placeholder="xxxxxxxxxxxxxxx@hotmail.com*"/>
-            <span className="error-texto" id="err-correo"></span>
+            <input type="email" id="correo" name="correo" placeholder="xxxxxxxxxxxxxxx@hotmail.com*"/>
+            <span className="error-texto" id="err-correo">{errores.correo}</span>
           </div>
 
        
           <div className="fila-dos-campos">
             <div className="campo">
               <label htmlFor="reg-nombre">Nombre:</label>
-              <input type="text" id="reg-nombre" placeholder="Nombre*"/>
-              <span className="error-texto" id="err-nombre"></span>
+              <input type="text" id="reg-nombre" name="nombre" placeholder="Nombre*"/>
+              <span className="error-texto" id="err-nombre">{errores.nombre}</span>
             </div>
             <div className="campo">
               <label htmlFor="reg-apellido">Apellido:</label>
-              <input type="text" id="reg-apellido" placeholder="Apellido*"/>
-              <span className="error-texto" id="err-apellido"></span>
+              <input type="text" id="reg-apellido" name="apellido" placeholder="Apellido*"/>
+              <span className="error-texto" id="err-apellido">{errores.apellido}</span>
             </div>
           </div>
 
@@ -45,14 +120,14 @@ function Registro(){
               <label htmlFor="reg-telefono">Numero tel:</label>
               <div className="input-prefijo-tel">
                 <span className="prefijo">+56 9</span>
-                <input type="tel" id="reg-telefono" placeholder="xxxxxxxxx"/>
+                <input type="tel" id="reg-telefono" name="telefono" placeholder="xxxxxxxxx"/>
               </div>
-              <span className="error-texto" id="err-telefono"></span>
+              <span className="error-texto" id="err-telefono">{errores.telefono}</span>
             </div>
             <div className="campo">
               <label htmlFor="reg-rut">RUT:</label>
-              <input type="text" id="reg-rut" placeholder="12.345.678-9*"/>
-              <span className="error-texto" id="err-rut"></span>
+              <input type="text" id="reg-rut" name="rut" placeholder="12.345.678-9*"/>
+              <span className="error-texto" id="err-rut">{errores.rut}</span>
             </div>
           </div>
 
@@ -60,22 +135,23 @@ function Registro(){
           <div className="fila-dos-campos">
             <div className="campo">
               <label htmlFor="clave">Contraseña:</label>
-              <input type="password" id="clave" placeholder="**************"/>
-              <span className="error-texto" id="err-clave"></span>
+              <input type="password" id="clave" name="clave" placeholder="**************"/>
+              <span className="error-texto" id="err-clave">{errores.clave}</span>
             </div>
             <div className="campo">
               <label htmlFor="repetirClave">Repetir Contraseña:</label>
-              <input type="password" id="repetirClave" placeholder="**************"/>
-              <span className="error-texto" id="err-repetir"></span>
+              <input type="password" id="repetirClave" name="repetir" placeholder="**************"/>
+              <span className="error-texto" id="err-repetir">{errores.repetir}</span>
             </div>
           </div>
 
          
+          <span className="error-texto">{errorGeneral}</span>
           <button type="submit" className="btn-submit-registro">Registrarme</button>
 
       
           <div className="campo-check">
-            <input type="checkbox" id="checkNoticias"/>
+            <input type="checkbox" id="checkNoticias" name="noticias"/>
             <label htmlFor="checkNoticias">Deseo recibir noticias y actualizaciones.</label>
           </div>
 

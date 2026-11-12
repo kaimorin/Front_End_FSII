@@ -1,7 +1,34 @@
-import { Link } from 'react-router'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { apiFetch, guardarSesion } from '../api'
 import bannerLogin from '../assets/banner-login.jpg'
 
 function Login() {
+    const navigate = useNavigate()
+    const [correo, setCorreo] = useState('')
+    const [clave, setClave] = useState('')
+    const [error, setError] = useState('')
+
+    async function ingresar(e) {
+        e.preventDefault()
+        setError('')
+        try {
+            const res = await apiFetch('/usuarios/login', {
+                method: 'POST',
+                body: JSON.stringify({ correo, clave }),
+            })
+            if (!res.ok) {
+                setError('Correo o contraseña incorrectos.')
+                return
+            }
+            const datos = await res.json()
+            guardarSesion(datos)
+            navigate(datos.rol === 'ADMIN' ? '/admin' : '/')
+        } catch {
+            setError('No se pudo conectar con el servidor.')
+        }
+    }
+
     return(<main>
     
     <section className="banner-login">
@@ -18,12 +45,12 @@ function Login() {
           <p className="subtitulo-login">Inicia sesion usando tu correo electronico y contraseña.</p>
         </div>
 
-        <form id="formLogin" noValidate>
+        <form id="formLogin" noValidate onSubmit={ingresar}>
           
           <div className="campo">
             <label htmlFor="login-correo">Correo Electronico</label>
             <div className="input-con-icono">
-              <input type="email" id="login-correo" placeholder="MarisolJimenez@gmail.com"/>
+              <input type="email" id="login-correo" placeholder="MarisolJimenez@gmail.com" value={correo} onChange={(e) => setCorreo(e.target.value)}/>
               <span className="icono-campo">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#777" strokeWidth="1.8">
                   <rect x="2" y="4" width="20" height="16" rx="2"></rect>
@@ -38,7 +65,7 @@ function Login() {
           <div className="campo">
             <label htmlFor="login-clave">Contraseña</label>
             <div className="input-con-icono">
-              <input type="password" id="login-clave" placeholder="*************************"/>
+              <input type="password" id="login-clave" placeholder="*************************" value={clave} onChange={(e) => setClave(e.target.value)}/>
               <span className="icono-campo">
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#777" strokeWidth="1.8">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
@@ -46,7 +73,7 @@ function Login() {
                 </svg>
               </span>
             </div>
-            <span className="error-texto" id="err-login-clave"></span>
+            <span className="error-texto" id="err-login-clave">{error}</span>
           </div>
 
          

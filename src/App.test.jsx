@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import App from './App.jsx'
@@ -22,6 +22,9 @@ vi.mock('./pages/Especialistas.jsx', () => ({ default: () => <div>Vista Especial
 vi.mock('./pages/Reportes.jsx', () => ({ default: () => <div>Vista Reportes Admin</div> }))
 
 describe('App Routing', () => {
+    beforeEach(() => {
+    localStorage.setItem('usuario', JSON.stringify({ rol: 'ADMIN' }))
+  })
   // 1. Sitio Público
   it('renderiza la página Home en la ruta raíz "/"', () => {
     render(
