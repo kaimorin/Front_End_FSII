@@ -51,7 +51,7 @@ jobs:
           source: '.'
           target: '/home/${{ secrets.EC2_USER }}/micros/nutrivida-front'
 
-        name: Build y levantar con Docker Compose
+      - name: Build y levantar con Docker Compose
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -62,7 +62,7 @@ jobs:
             cd /home/${{ secrets.EC2_USER }}/micros/nutrivida-front
 
             # Le dice a nginx dónde está el back (IP elástica del back)
-            echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
+            echo "BACKEND_URL=${{ secrets.BACKEND_URL || 'http://100.48.204.154:9005' }}" > .env
 
             docker compose down
             docker compose up -d --build
