@@ -1,7 +1,10 @@
 services:
   front:
+    build:
+      context: .
+      args:
+        VITE_API_URL: /api
     image: nutrivida-front:latest
-    pull_policy: never
     container_name: nutrivida-front
     ports:
       - "80:80"
