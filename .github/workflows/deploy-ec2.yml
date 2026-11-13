@@ -39,6 +39,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codigo
+      - name: Verificar secret BACKEND_URL
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: test -n "$BACKEND_URL" || { echo "Falta el secret BACKEND_URL"; exit 1; }
         uses: actions/checkout@v4
 
       - name: Copiar archivos a EC2
@@ -47,7 +51,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || 22 }}
+          port: ${{ secrets.EC2_PORT }}
           source: '.'
           target: '/home/${{ secrets.EC2_USER }}/micros/nutrivida-front'
 
@@ -57,12 +61,12 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || 22 }}
+          port: ${{ secrets.EC2_PORT }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/micros/nutrivida-front
 
             # Le dice a nginx dónde está el back (IP elástica del back)
-            echo "BACKEND_URL=${{ secrets.BACKEND_URL || 'http://100.48.204.154:9005' }}" > .env
+            echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
 
             docker compose down
             docker compose up -d --build

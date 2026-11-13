@@ -1,9 +1,10 @@
 services:
   front:
-    build: .
+    image: nutrivida-front:latest
+    pull_policy: never
     container_name: nutrivida-front
     ports:
       - "80:80"
     environment:
-      BACKEND_URL: ${BACKEND_URL:-http://100.48.204.154:9005}
+      BACKEND_URL: ${BACKEND_URL:?Falta BACKEND_URL en el archivo .env}
     restart: unless-stopped
