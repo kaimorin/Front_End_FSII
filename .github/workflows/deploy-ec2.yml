@@ -51,7 +51,7 @@ jobs:
           source: '.'
           target: '/home/${{ secrets.EC2_USER }}/micros/nutrivida-front'
 
-      - name: Build y levantar con Docker Compose
+        name: Build y levantar con Docker Compose
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -60,5 +60,17 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/micros/nutrivida-front
+
+            # Le dice a nginx dónde está el back (IP elástica del back)
+            echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
+
             docker compose down
             docker compose up -d --build
+
+            # Verifica que el front alcanza al back a través de /api
+            sleep 5
+            if curl -sf http://localhost/api/especialistas/activos > /dev/null; then
+              echo "OK: el front se conecta con el back"
+            else
+              echo "AVISO: el front no alcanza al back (revisa el security group y que el back esté encendido)"
+            fi

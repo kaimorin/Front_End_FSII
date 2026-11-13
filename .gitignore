@@ -31,3 +31,7 @@ dist-ssr
 
 # Vitest (informe de cobertura)
 /coverage/
+
+# Variables de entorno privadas
+.env
+.env.*
