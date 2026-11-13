@@ -15,47 +15,43 @@ describe('Confirmacion', () => {
       </MemoryRouter>
     )
 
-    // Validar encabezados y textos principales
     expect(screen.getByText('NUTRIVIDA')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /¡has agendado tu cita con éxito!/i, level: 2 })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /recomendaciones para tu visita:/i, level: 3 })).toBeInTheDocument()
 
-    // Validar la existencia de las listas de recomendaciones
     expect(screen.getByText(/llegar con unos 10 minutos de anticipación/i)).toBeInTheDocument()
     expect(screen.getByText(/si cuentas con exámenes de sangre recientes/i)).toBeInTheDocument()
 
-    // Validar el botón de retorno a la página principal
     const botonInicio = screen.getByRole('link', { name: /volver al inicio/i })
     expect(botonInicio).toBeInTheDocument()
     expect(botonInicio).toHaveAttribute('href', '/')
   })
 
-  it('muestra los valores por defecto cuando no hay ninguna cita en sessionStorage', () => {
+  it('muestra textos por defecto cuando no hay ninguna cita en sessionStorage', () => {
     render(
       <MemoryRouter>
         <Confirmacion />
       </MemoryRouter>
     )
 
-    // Al no haber datos en sessionStorage, debe renderizar los textos fallback
-    expect(screen.getByText('Dra. Maria de Judas')).toBeInTheDocument()
+    expect(screen.getByText('Por confirmar')).toBeInTheDocument()
     expect(screen.getByText('Fecha por confirmar')).toBeInTheDocument()
     expect(screen.getByText('Hora por confirmar')).toBeInTheDocument()
-    
-    // Al estar vacía la especialidad por defecto, no debe renderizar ese elemento de la lista
+
+    // Sin cita no se muestran la especialidad ni el número de reserva
     expect(screen.queryByText(/especialidad:/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/reserva:/i)).not.toBeInTheDocument()
   })
 
-  it('muestra correctamente los detalles de una cita recuperada desde sessionStorage', () => {
-    const mockCita = {
-      doctor: 'Dr. Maximo Tul´Onazo',
-      especialidad: 'Nutrición Deportiva',
-      fecha: '25 de Marzo, 2026',
-      hora: '15:30 PM'
-    }
-    
-    // Guardamos la cita ficticia en el almacenamiento de la sesión
-    sessionStorage.setItem('cita', JSON.stringify(mockCita))
+  it('muestra los detalles de la cita guardada, con el nombre de la especialidad y el número de reserva', () => {
+    sessionStorage.setItem('cita', JSON.stringify({
+      id: 12,
+      doctor: 'Maximo Tul Onazzo',
+      especialidad: 'nutricion-deportiva', // así la guarda Agenda
+      modalidad: 'Online',
+      fecha: 'Lunes, 10 de marzo de 2025',
+      hora: '3:30 PM',
+    }))
 
     render(
       <MemoryRouter>
@@ -63,10 +59,11 @@ describe('Confirmacion', () => {
       </MemoryRouter>
     )
 
-    // El componente debe parsear y renderizar los datos guardados en el almacenamiento
-    expect(screen.getByText('Dr. Maximo Tul´Onazo')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(screen.getByText('Maximo Tul Onazzo')).toBeInTheDocument()
     expect(screen.getByText('Nutrición Deportiva')).toBeInTheDocument()
-    expect(screen.getByText('25 de Marzo, 2026')).toBeInTheDocument()
-    expect(screen.getByText('15:30 PM')).toBeInTheDocument()
+    expect(screen.getByText('Online')).toBeInTheDocument()
+    expect(screen.getByText('Lunes, 10 de marzo de 2025')).toBeInTheDocument()
+    expect(screen.getByText('3:30 PM')).toBeInTheDocument()
   })
 })

@@ -46,15 +46,6 @@ export default function App() {
         
       </Route>
 
-      {/* panel admin */}
-      <Route path="admin" element={<LayoutAdmin />}>
-        <Route index element={<Dashboard />} />
-        <Route path="citas" element={<CitasHorario />} />
-        <Route path="pacientes" element={<Pacientes />} />
-        <Route path="especialistas" element={<Especialistas />} />
-        <Route path="reportes" element={<Reportes />} />
-      </Route>
-      
       {/* panel admin (solo ADMIN) */}
       <Route element={<RutaAdmin />}>
         <Route path="admin" element={<LayoutAdmin />}>

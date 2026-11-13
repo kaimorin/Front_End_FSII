@@ -1,15 +1,26 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { apiFetch, cerrarSesion, obtenerUsuario, formatearRut } from '../api'
+import { apiFetch, cerrarSesion, obtenerUsuario, useUsuario, formatearRut } from '../api'
+import { dinero, nombreEspecialidad, PRECIO_CITA } from '../utils/formato'
 import bannerPago from '../assets/banner-pago.jpg'
 import webpay from '../assets/webpay.png'
 import mercadopago from '../assets/mercadopago.png'
 import balanza from '../assets/resumen-balanza.jpg'
 
+function leerSession(clave) {
+  return JSON.parse(sessionStorage.getItem(clave) || 'null')
+}
+
 function Pago() {
   const navigate = useNavigate()
+  const usuario = useUsuario()
   const [metodo, setMetodo] = useState('webpay')
   const [error, setError] = useState('')
+  const [enviando, setEnviando] = useState(false)
+
+  // Datos para el resumen (los guardó el paso 2: Agenda)
+  const resumen = leerSession('cita')
+  const iva = Math.round(PRECIO_CITA * 0.19)
 
   // El back responde 403 (o 401) si el token falta o venció
   function sesionVencida(res) {
@@ -23,6 +34,7 @@ function Pago() {
 
   async function pagar(e) {
     e.preventDefault()
+    if (enviando) return
     setError('')
 
     if (!obtenerUsuario()) {
@@ -30,8 +42,8 @@ function Pago() {
       return
     }
 
-    const cita = JSON.parse(sessionStorage.getItem('cita') || 'null')
-    const paciente = JSON.parse(sessionStorage.getItem('datosPaciente') || 'null')
+    const cita = leerSession('cita')
+    const paciente = leerSession('datosPaciente')
     if (!cita || !paciente) {
       setError('Faltan datos de tu reserva. Vuelve al paso 1.')
       return
@@ -39,6 +51,7 @@ function Pago() {
 
     const rut = formatearRut(paciente.rut) // el back exige 12.345.678-9
 
+    setEnviando(true)
     try {
       // 1. Guarda (o actualiza) al paciente
       const resPaciente = await apiFetch('/pacientes', {
@@ -69,9 +82,16 @@ function Pago() {
         return
       }
 
+      // 3. Deja la cita creada (con su número) para la pantalla de confirmación
+      const creada = await resCita.json().catch(() => ({}))
+      sessionStorage.setItem('cita', JSON.stringify({ ...cita, id: creada.id, metodoPago: metodo }))
+      sessionStorage.removeItem('datosPaciente') // evita pagar dos veces la misma reserva
+
       navigate('/reserva/confirmacion')
     } catch {
       setError('No se pudo conectar con el servidor.')
+    } finally {
+      setEnviando(false)
     }
   }
 
@@ -110,6 +130,12 @@ function Pago() {
             <img src={mercadopago} alt="Mercado Pago" className="logo-pasarela-mp" />
           </label>
 
+          {!usuario && (
+            <p className="aviso-sesion">
+              Para pagar debes <Link to="/login" state={{ volverA: '/reserva/pago' }}>iniciar sesión</Link>. Tus datos de la reserva se mantienen.
+            </p>
+          )}
+
           {error && <p className="error-texto">{error}</p>}
 
           <div className="fila-botones-pago">
@@ -124,9 +150,14 @@ function Pago() {
           <div className="item-servicio-resumen">
             <img src={balanza} alt="Pesaje" className="img-mini-resumen" />
             <div className="info-servicio-resumen">
-              <strong>CITA PARA BAJAR GRASA CORPORAL ADULTO</strong>
-              <span className="nombre-doc-resumen">DRA MARIA D.J</span>
-              <span className="precio-item-resumen">$35,000</span>
+              <strong>
+                {resumen?.especialidad
+                  ? `CITA DE ${nombreEspecialidad(resumen.especialidad).toUpperCase()}`
+                  : 'CITA NUTRICIONAL'}
+              </strong>
+              <span className="nombre-doc-resumen">{resumen?.doctor ? resumen.doctor.toUpperCase() : 'DOCTOR POR DEFINIR'}</span>
+              {resumen && <span>{resumen.fecha} · {resumen.hora} · {resumen.modalidad}</span>}
+              <span className="precio-item-resumen">{dinero(PRECIO_CITA)}</span>
             </div>
           </div>
 
@@ -144,18 +175,18 @@ function Pago() {
 
           <div className="fila-total-linea">
             <span>SUBTOTAL</span>
-            <span>$35,000</span>
+            <span>{dinero(PRECIO_CITA)}</span>
           </div>
           <div className="fila-total-linea">
             <span>I.V.A</span>
-            <span>$6,650</span>
+            <span>{dinero(iva)}</span>
           </div>
 
           <div className="divisor-resumen"></div>
 
           <div className="fila-total-final">
             <strong>TOTAL</strong>
-            <strong>$41,650</strong>
+            <strong>{dinero(PRECIO_CITA + iva)}</strong>
           </div>
         </aside>
       </section>

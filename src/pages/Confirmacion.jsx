@@ -1,13 +1,15 @@
 import { Link } from 'react-router'
+import { nombreEspecialidad } from '../utils/formato'
 import bannere from '../assets/banner-exito.jpg'
 
 function Confirmacion() {
+  // La cita la deja guardada Pago.jsx después de crearla en el back
   const citaGuardada = sessionStorage.getItem('cita')
   const cita = citaGuardada ? JSON.parse(citaGuardada) : null
-  const doctor = cita?.doctor || 'Dra. Maria de Judas'
+  const doctor = cita?.doctor || 'Por confirmar'
   const fecha = cita?.fecha || 'Fecha por confirmar'
   const hora = cita?.hora || 'Hora por confirmar'
-  const especialidad = cita?.especialidad || ''
+  const especialidad = nombreEspecialidad(cita?.especialidad)
 
   return (
     <main>
@@ -28,8 +30,10 @@ function Confirmacion() {
           </p>
 
           <ul className="lista-detalles-cita">
+            {cita?.id && <li><strong>N.º de reserva:</strong> {cita.id}</li>}
             <li><strong>Especialista:</strong> {doctor}</li>
             {especialidad && <li><strong>Especialidad:</strong> {especialidad}</li>}
+            {cita?.modalidad && <li><strong>Modalidad:</strong> {cita.modalidad}</li>}
             <li><strong>Fecha:</strong> {fecha}</li>
             <li><strong>Hora:</strong> {hora}</li>
           </ul>
@@ -48,7 +52,6 @@ function Confirmacion() {
         </div>
 
         <div className="contenedor-btn-volver">
-          {/* Usar Link en lugar de index.html para mantener la SPA en React Router */}
           <Link to="/" className="btn-volver-inicio">Volver al Inicio</Link>
         </div>
       </section>

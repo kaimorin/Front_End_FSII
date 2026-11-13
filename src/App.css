@@ -2362,5 +2362,52 @@ input[type="radio"]:checked + .circulo-check::after {
   .btn-agenda {
     margin-top: 10px;
   }
+  /* ===== Conexión front-back  */
+  .aviso-sesion {
+    background: #f1f8f1;
+    border: 1px solid #cfe5cf;
+    color: #2e5d2e;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin: 0 0 1.2rem;
+    font-size: 0.95rem;
+  }
+
+  .aviso-sesion a {
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  .msg-admin-error {
+    color: #c62828;
+    margin: 1rem 0;
+  }
+
+  .badge-cancelado {
+    background-color: #fdecea;
+    color: #c62828;
+  }
+
+  .select-estado {
+    padding: 0.25rem 0.4rem;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+
+  .form-admin-inline {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-admin-inline input,
+  .form-admin-inline select {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+
 }
 

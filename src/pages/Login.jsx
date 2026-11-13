@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { apiFetch, guardarSesion } from '../api'
 import bannerLogin from '../assets/banner-login.jpg'
 
 function Login() {
     const navigate = useNavigate()
+    const location = useLocation()
     const [correo, setCorreo] = useState('')
     const [clave, setClave] = useState('')
     const [error, setError] = useState('')
@@ -23,7 +24,8 @@ function Login() {
             }
             const datos = await res.json()
             guardarSesion(datos)
-            navigate(datos.rol === 'ADMIN' ? '/admin' : '/')
+            // Si venía del pago o de los datos de la reserva, vuelve ahí
+            navigate(location.state?.volverA || (datos.rol === 'ADMIN' ? '/admin' : '/'))
         } catch {
             setError('No se pudo conectar con el servidor.')
         }

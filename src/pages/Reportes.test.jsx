@@ -1,56 +1,53 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import Reportes from './Reportes.jsx'
+import { apiGet } from '../api'
+import { fechaLarga } from '../utils/formato'
+
+vi.mock('../api', async (importOriginal) => ({
+  ...(await importOriginal()),
+  apiGet: vi.fn(),
+}))
+
+const hoy = fechaLarga(new Date())
+const citas = [
+  { id: 1, pacienteNombre: 'Lucas', pacienteApellido: 'Gómez', especialidad: 'control-peso', metodoPago: 'webpay', fecha: hoy, hora: '11:00 AM', estado: 'Confirmado', precioBase: 35000 },
+  { id: 2, pacienteNombre: 'Elena', pacienteApellido: 'Rostova', especialidad: 'salud-digestiva', metodoPago: 'mercadopago', fecha: hoy, hora: '12:00 PM', estado: 'Pendiente', precioBase: 35000 },
+  { id: 3, pacienteNombre: 'Camila', pacienteApellido: 'Rojas', especialidad: 'control-peso', metodoPago: 'webpay', fecha: hoy, hora: '10:30 AM', estado: 'Atendido', precioBase: 35000 },
+  { id: 4, pacienteNombre: 'Pedro', pacienteApellido: 'Soto', especialidad: 'nutricion-deportiva', metodoPago: 'webpay', fecha: hoy, hora: '01:00 PM', estado: 'Cancelado', precioBase: 35000 },
+]
 
 describe('Reportes', () => {
-  it('renderiza la cabecera con el título y la descripción correctas', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiGet.mockResolvedValue(citas)
+  })
+
+  it('renderiza la cabecera con el título y la descripción', async () => {
     render(<Reportes />)
 
-    // Validar encabezado principal
     expect(screen.getByRole('heading', { name: /reportes y pagos/i, level: 1 })).toBeInTheDocument()
     expect(screen.getByText('Resumen de ingresos y pagos')).toBeInTheDocument()
+    await screen.findByText('Lucas Gómez')
   })
 
-  it('muestra las tarjetas de métricas con sus valores correctos', () => {
+  it('calcula las métricas con las citas del back', async () => {
     render(<Reportes />)
+    await screen.findByText('Lucas Gómez')
 
-    // Validar bloques de analíticas financieras y de transacciones
-    expect(screen.getByText('Ingresos del Mes')).toBeInTheDocument()
-    expect(screen.getByText('$1,450,000')).toBeInTheDocument()
-
-    expect(screen.getByText('Pagos Realizados')).toBeInTheDocument()
-    expect(screen.getByText('42')).toBeInTheDocument()
-
-    expect(screen.getByText('Pendientes de Pago')).toBeInTheDocument()
-    expect(screen.getByText('4')).toBeInTheDocument()
+    expect(screen.getByText('$83,300')).toBeInTheDocument() // Lucas y Camila, con IVA
+    expect(screen.getByText('2')).toBeInTheDocument() // pagos realizados
+    expect(screen.getByText('1')).toBeInTheDocument() // pendiente: Elena
   })
 
-  it('renderiza la tabla y evalúa las clases condicionales de los estados de pago', () => {
+  it('muestra cada pago con su estado y clase de color', async () => {
     render(<Reportes />)
+    await screen.findByText('Lucas Gómez')
 
-    // Validar encabezados de la estructura tabular
-    expect(screen.getByRole('columnheader', { name: /paciente/i })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /servicio/i })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /monto/i })).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: /estado/i })).toBeInTheDocument()
-
-    // Validar filas de datos mapeados del arreglo
-    expect(screen.getByText('Lucas Gómez')).toBeInTheDocument()
-    expect(screen.getByText('Control de Peso')).toBeInTheDocument()
-    expect(screen.getByText('$41,650')).toBeInTheDocument()
-
-    // Evaluar la rama condicional: 'Pagado' (badge badge-finalizado)
-    const badgePagado = screen.getAllByText('Pagado')[0]
-    expect(badgePagado).toBeInTheDocument()
-    expect(badgePagado).toHaveClass('badge', 'badge-finalizado')
-
-    // Evaluar la rama condicional: 'Pendiente' (badge badge-pendiente)
-    expect(screen.getByText('Elena Rostova')).toBeInTheDocument()
-    const badgePendiente = screen.getByText('Pendiente')
-    expect(badgePendiente).toBeInTheDocument()
-    expect(badgePendiente).toHaveClass('badge', 'badge-pendiente')
-
-    expect(screen.getByText('Camila Rojas')).toBeInTheDocument()
-    expect(screen.getByText('$37,820')).toBeInTheDocument()
+    expect(screen.getByText('Salud Digestiva')).toBeInTheDocument()
+    expect(screen.getAllByText('$41,650').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Pagado')[0]).toHaveClass('badge', 'badge-finalizado')
+    expect(screen.getByText('Pendiente')).toHaveClass('badge', 'badge-pendiente')
+    expect(screen.getByText('Cancelado')).toHaveClass('badge', 'badge-cancelado')
   })
 })

@@ -1,4 +1,5 @@
 import { Link, NavLink } from 'react-router'
+import { salir } from '../api'
 
 function AdminLeader() {
   const clase = ({ isActive }) => (isActive ? 'item-admin activo' : 'item-admin')
@@ -18,7 +19,7 @@ function AdminLeader() {
       </nav>
 
       <div className="admin-logout">
-        <Link to="/login" className="link-logout">Cerrar Sesión</Link>
+        <Link to="/login" className="link-logout" onClick={() => salir()}>Cerrar Sesión</Link>
       </div>
     </aside>
   )
