@@ -39,11 +39,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codigo
+        uses: actions/checkout@v4
+
       - name: Verificar secret BACKEND_URL
         env:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: test -n "$BACKEND_URL" || { echo "Falta el secret BACKEND_URL"; exit 1; }
-        uses: actions/checkout@v4
 
       - name: Copiar archivos a EC2
         uses: appleboy/scp-action@v0.1.7
@@ -64,17 +65,12 @@ jobs:
           port: ${{ secrets.EC2_PORT }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/micros/nutrivida-front
-
-            # Le dice a nginx dónde está el back (IP elástica del back)
             echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
-
             docker compose down
             docker compose up -d --build
-
-            # Verifica que el front alcanza al back a través de /api
             sleep 5
             if curl -sf http://localhost/api/especialistas/activos > /dev/null; then
               echo "OK: el front se conecta con el back"
             else
-              echo "AVISO: el front no alcanza al back (revisa el security group y que el back esté encendido)"
+              echo "AVISO: el front no alcanza al back (revisa el security group y que el back estÃ© encendido)"
             fi
