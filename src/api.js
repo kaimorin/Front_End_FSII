@@ -1,35 +1,58 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import { API_URL } from './config'
 
-// Avisa a los componentes (Header, Perfil, etc.) que la sesión cambió
+// ── Gestión de sesión ──────────────────────────────────────────────────────
+
 function avisarCambioSesion() {
   window.dispatchEvent(new Event('sesion'))
 }
 
 export function guardarSesion(datos) {
-  localStorage.setItem('token', datos.token)
-  localStorage.setItem('usuario', JSON.stringify(datos))
+  // accessToken en memoria (no en localStorage) → protege contra XSS
+  _accessToken = datos.accessToken
+  // Solo guardamos en localStorage lo no sensible + el refreshToken
+  const sesion = {
+    id:           datos.id,
+    nombre:       datos.nombre,
+    apellido:     datos.apellido,
+    correo:       datos.correo,
+    rol:          datos.rol,
+    refreshToken: datos.refreshToken,
+  }
+  localStorage.setItem('sesion', JSON.stringify(sesion))
   avisarCambioSesion()
 }
 
 export function cerrarSesion() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('usuario')
+  _accessToken = null
+  localStorage.removeItem('sesion')
   avisarCambioSesion()
 }
 
-// Cierra sesión y borra también los datos de la reserva en curso
 export function salir() {
+  const sesion = obtenerUsuario()
+  if (sesion?.refreshToken) {
+    // Revoca el refresh token en el backend (best-effort, no bloqueante)
+    fetch(`${API_URL}/usuarios/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: sesion.refreshToken }),
+    }).catch(() => {})
+  }
   cerrarSesion()
   sessionStorage.clear()
 }
 
 export function obtenerUsuario() {
-  const u = localStorage.getItem('usuario')
-  return u ? JSON.parse(u) : null
+  try {
+    const u = localStorage.getItem('sesion')
+    return u ? JSON.parse(u) : null
+  } catch {
+    return null
+  }
 }
 
-// Igual que obtenerUsuario, pero hace que el componente se actualice al iniciar o cerrar sesión
+// Hook reactivo para componentes
 function suscribir(aviso) {
   window.addEventListener('sesion', aviso)
   window.addEventListener('storage', aviso)
@@ -40,27 +63,85 @@ function suscribir(aviso) {
 }
 
 export function useUsuario() {
-  const texto = useSyncExternalStore(suscribir, () => localStorage.getItem('usuario'))
-  return useMemo(() => (texto ? JSON.parse(texto) : null), [texto])
+  const texto = useSyncExternalStore(suscribir, () => localStorage.getItem('sesion'))
+  return useMemo(() => {
+    if (!texto) return null
+    try { return JSON.parse(texto) } catch { return null }
+  }, [texto])
 }
 
-// Igual que fetch, pero agrega el token y el Content-Type solo
-export function apiFetch(ruta, opciones = {}) {
-  const token = localStorage.getItem('token')
-  const headers = { 'Content-Type': 'application/json', ...opciones.headers }
+// ── Token en memoria (evita XSS directo al accessToken) ───────────────────
+
+let _accessToken = null
+
+function obtenerAccessToken() {
+  return _accessToken
+}
+
+// ── Renovación automática de token ────────────────────────────────────────
+
+let _renovando = null   // promesa en vuelo para evitar renovaciones paralelas
+
+async function renovarToken() {
+  if (_renovando) return _renovando
+  const sesion = obtenerUsuario()
+  if (!sesion?.refreshToken) { cerrarSesion(); return null }
+
+  _renovando = fetch(`${API_URL}/usuarios/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken: sesion.refreshToken }),
+  })
+    .then(async (res) => {
+      if (!res.ok) { cerrarSesion(); return null }
+      const { accessToken } = await res.json()
+      _accessToken = accessToken
+      return accessToken
+    })
+    .catch(() => { cerrarSesion(); return null })
+    .finally(() => { _renovando = null })
+
+  return _renovando
+}
+
+// ── Cliente HTTP ───────────────────────────────────────────────────────────
+
+
+export async function apiFetch(ruta, opciones = {}, _reintento = false) {
+  const token = obtenerAccessToken()
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',   // protección ligera contra CSRF en CORS simple
+    ...opciones.headers,
+  }
   if (token) headers.Authorization = `Bearer ${token}`
-  return fetch(`${API_URL}${ruta}`, { ...opciones, headers })
+
+  const res = await fetch(`${API_URL}${ruta}`, { ...opciones, headers })
+
+  // Reintento automático con refresh token (una sola vez)
+  if (res.status === 401 && !_reintento) {
+    const nuevoToken = await renovarToken()
+    if (nuevoToken) return apiFetch(ruta, opciones, true)
+    cerrarSesion()
+  }
+
+  return res
 }
 
-// GET que devuelve el JSON, o null si el back responde con error (404, 403...).
-// Si el token venció (401/403) cierra la sesión.
+
 export async function apiGet(ruta) {
-  const res = await apiFetch(ruta)
-  if (res.status === 401 || res.status === 403) cerrarSesion()
-  return res.ok ? res.json() : null
+  try {
+    const res = await apiFetch(ruta)
+    if (res.status === 401 || res.status === 403) { cerrarSesion(); return null }
+    return res.ok ? res.json() : null
+  } catch {
+    return null
+  }
 }
 
-// Convierte cualquier RUT (12345678K, 12.345.678-K, 12345678-K) al formato del back: 12.345.678-K
+// ── Utilidades ────────────────────────────────────────────────────────────
+
+/** Convierte cualquier RUT al formato del back: 12.345.678-K */
 export function formatearRut(rut) {
   const limpio = String(rut).replace(/[^0-9kK]/g, '').toUpperCase()
   if (limpio.length < 2) return limpio

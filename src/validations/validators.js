@@ -1,6 +1,4 @@
-// Validadores puros (sin DOM): reciben el valor y devuelven { valido, mensaje }.
-// - valido:  true si el campo cumple la regla.
-// - mensaje: texto de error cuando es inválido, o texto de éxito (puede ser "") cuando es válido.
+// Validadores puros: reciben el valor y devuelven { valido, mensaje }.
 
 import {
   regexLetras,
@@ -13,24 +11,22 @@ import {
 const error = (mensaje) => ({ valido: false, mensaje })
 const exito = (mensaje = '') => ({ valido: true, mensaje })
 
-// ---------- Normalizadores (se aplican en onChange antes de guardar el valor) ----------
+// ── Normalizadores ────────────────────────────────────────────────────────
 
-// El RUT se escribe sin puntos ni guion, en mayúscula y con máximo 9 caracteres (Ej: 12345678K)
 export const normalizarRut = (valor) => valor.trim().toUpperCase().slice(0, 9)
-
-// El teléfono admite máximo 8 dígitos (el prefijo +56 9 ya está en pantalla)
 export const normalizarTelefono = (valor) => valor.trim().slice(0, 8)
 
-// ---------- Campos de texto ----------
+// ── Campos de texto ───────────────────────────────────────────────────────
 
 const validarSoloLetras = (valor, mensajeObligatorio) => {
-  if (valor.trim() === '') return error(mensajeObligatorio)
-  if (!regexLetras.test(valor)) return error('Usa solo letras.')
+  const v = valor.trim()
+  if (v === '') return error(mensajeObligatorio)
+  if (v.length > 100) return error('Máximo 100 caracteres.')
+  if (!regexLetras.test(v)) return error('Usa solo letras.')
   return exito()
 }
 
-export const validarNombre = (valor) => validarSoloLetras(valor, 'El nombre es obligatorio.')
-
+export const validarNombre   = (valor) => validarSoloLetras(valor, 'El nombre es obligatorio.')
 export const validarApellido = (valor) => validarSoloLetras(valor, 'El apellido es obligatorio.')
 
 export const validarTelefono = (valor) => {
@@ -42,16 +38,16 @@ export const validarTelefono = (valor) => {
   return exito()
 }
 
-// ---------- Correo ----------
+// ── Correo ────────────────────────────────────────────────────────────────
 
 export const validarCorreo = (valor) => {
   const v = valor.trim()
   if (v === '') return error('El correo es obligatorio.')
+  if (v.length > 254) return error('El correo es demasiado largo.')
   if (!regexCorreo.test(v)) return error('Dominio inválido.')
   return exito()
 }
 
-// En el login los mensajes son distintos a los del registro
 export const validarCorreoLogin = (valor) => {
   const v = valor.trim()
   if (v === '') return error('Ingrese su correo.')
@@ -59,29 +55,30 @@ export const validarCorreoLogin = (valor) => {
   return exito()
 }
 
-// ---------- RUT ----------
+// ── RUT ───────────────────────────────────────────────────────────────────
 
 export const validarRut = (valor) => {
   const v = valor.trim().toUpperCase()
   if (v === '') return error('El RUT es obligatorio.')
   if (v.length < 9) return error(`Faltan ${9 - v.length} caracteres.`)
+  if (v.length > 9) return error('RUT demasiado largo.')
   if (!regexRut9.test(v)) return error('Formato inválido (Ej: 12345678K).')
   return exito('¡RUT válido!')
 }
 
-// ---------- Contraseñas ----------
+// ── Contraseñas ───────────────────────────────────────────────────────────
 
 export const validarClave = (valor) => {
   if (valor === '') return error('La contraseña es obligatoria.')
-  if (valor.length < 4 || valor.length > 10) return error('Debe tener entre 4 y 10 caracteres.')
+  if (valor.length < 4) return error('Mínimo 4 caracteres.')
+  if (valor.length > 100) return error('Máximo 100 caracteres.')
   if (!regexClaveSegura.test(valor)) return error('Falta 1 mayúscula y 1 número.')
   return exito('¡Contraseña segura!')
 }
 
-// En el login solo se revisa el largo (la complejidad se exige al registrarse)
 export const validarClaveLogin = (valor) => {
   if (valor === '') return error('La contraseña es requerida.')
-  if (valor.length < 4 || valor.length > 10) return error('Debe tener entre 4 y 10 caracteres.')
+  if (valor.length < 4) return error('Mínimo 4 caracteres.')
   return exito()
 }
 
