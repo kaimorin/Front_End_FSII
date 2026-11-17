@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import App from './App.jsx'
+import { guardarSesion, cerrarSesion } from './api'
 
 // Mock de las páginas y layouts para probar el enrutamiento de forma aislada
 vi.mock('./pages/Home.jsx', () => ({ default: () => <div>Vista Home</div> }))
@@ -22,9 +23,21 @@ vi.mock('./pages/Especialistas.jsx', () => ({ default: () => <div>Vista Especial
 vi.mock('./pages/Reportes.jsx', () => ({ default: () => <div>Vista Reportes Admin</div> }))
 
 describe('App Routing', () => {
-    beforeEach(() => {
-    localStorage.setItem('usuario', JSON.stringify({ rol: 'ADMIN' }))
+  beforeEach(() => {
+    vi.clearAllMocks()
+    cerrarSesion()
+    localStorage.clear()
+    guardarSesion({
+      accessToken: 'fake-access-token',
+      refreshToken: 'fake-refresh-token',
+      id: 1,
+      nombre: 'Admin',
+      apellido: 'Test',
+      correo: 'admin@correo.cl',
+      rol: 'ADMIN',
+    })
   })
+
   // 1. Sitio Público
   it('renderiza la página Home en la ruta raíz "/"', () => {
     render(

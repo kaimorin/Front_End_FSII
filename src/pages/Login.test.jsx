@@ -11,9 +11,9 @@ describe('Login', () => {
         <Login />
       </MemoryRouter>
     )
-    expect(screen.getByLabelText(/Correo Electronico/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Correo Electrónico/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Contraseña/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Ingresar\.\.\./i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Ingresar$/i })).toBeInTheDocument()
   })
 
   it('permite escribir credenciales en los campos', async () => {
@@ -22,7 +22,7 @@ describe('Login', () => {
         <Login />
       </MemoryRouter>
     )
-    const inputCorreo = screen.getByLabelText(/Correo Electronico/i)
+    const inputCorreo = screen.getByLabelText(/Correo Electrónico/i)
     const inputContraseña = screen.getByLabelText(/Contraseña/i)
 
     await userEvent.type(inputCorreo, 'marisol@gmail.com')
@@ -32,15 +32,13 @@ describe('Login', () => {
     expect(inputContraseña).toHaveValue('password123')
   })
 
-
-  it('permite hacer click en el botón de iniciar sesión con Google', async () => {
+  it('muestra el enlace para registrarse si no tiene cuenta', () => {
     render(
       <MemoryRouter>
         <Login />
       </MemoryRouter>
     )
-    const botonGoogle = screen.getByRole('button', { name: /Inicia Sesion con Google/i })
-    await userEvent.click(botonGoogle)
-    expect(botonGoogle).toBeInTheDocument()
+    // Tu Login real no tiene botón de Google, tiene este link a registro
+    expect(screen.getByRole('link', { name: /aquí/i })).toHaveAttribute('href', '/registro')
   })
 })

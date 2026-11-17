@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import Perfil from './Perfil.jsx'
-import { apiGet } from '../api'
+import { apiGet, guardarSesion, cerrarSesion } from '../api'
 
 vi.mock('../api', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -24,8 +24,17 @@ function renderizar() {
 describe('Perfil', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    cerrarSesion()
     localStorage.clear()
-    localStorage.setItem('usuario', JSON.stringify({ id: 5, nombre: 'Ana', apellido: 'Pérez', correo: 'ana@correo.cl', rol: 'PACIENTE' }))
+    guardarSesion({
+      accessToken: 'fake-access-token',
+      refreshToken: 'fake-refresh-token',
+      id: 5,
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      correo: 'ana@correo.cl',
+      rol: 'PACIENTE',
+    })
     apiGet.mockImplementation(async (ruta) => {
       if (ruta === '/usuarios/5') {
         return { id: 5, nombre: 'Ana', apellido: 'Pérez', correo: 'ana@correo.cl', rut: '12.345.678-9', telefono: '+56 9 12345678' }
@@ -39,6 +48,7 @@ describe('Perfil', () => {
   })
 
   it('redirige al login si no hay sesión iniciada', () => {
+    cerrarSesion()
     localStorage.clear()
     renderizar()
 
@@ -85,6 +95,7 @@ describe('Perfil', () => {
 
     await userEvent.click(screen.getByRole('link', { name: /cerrar sesion/i }))
 
+    expect(localStorage.getItem('sesion')).toBeNull()
     expect(localStorage.getItem('usuario')).toBeNull()
     expect(screen.getByText('Vista Login')).toBeInTheDocument()
   })

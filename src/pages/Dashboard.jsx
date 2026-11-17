@@ -46,7 +46,7 @@ function Dashboard() {
       <header className="topbar-admin">
         <div>
           <h1 className="saludo-admin">Panel General</h1>
-          <p className="subtitulo-admin">Bienvenido de vuelta, {usuario?.nombre}</p>
+          <p className="subtitulo-admin">{`Bienvenido de vuelta, ${usuario?.nombre}`}</p>
         </div>
         <div className="buscador-admin">
           <input

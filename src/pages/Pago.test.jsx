@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useNavigate } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import Pago from './Pago.jsx'
-import { apiFetch } from '../api'
+import { apiFetch, guardarSesion, cerrarSesion } from '../api'
 
 vi.mock('react-router', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -41,14 +41,28 @@ function renderizar() {
   )
 }
 
+function sesionPaciente() {
+  guardarSesion({
+    accessToken: 'fake-access-token',
+    refreshToken: 'fake-refresh-token',
+    id: 5,
+    nombre: 'Ana',
+    apellido: 'Pérez',
+    correo: 'ana@correo.cl',
+    rol: 'PACIENTE',
+  })
+}
+
 describe('Pago', () => {
   const mockNavigate = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
+    cerrarSesion()
     localStorage.clear()
     sessionStorage.clear()
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
   })
 
   it('renderiza la barra de pasos de la agenda correctamente', () => {
@@ -128,7 +142,7 @@ describe('Pago', () => {
   })
 
   it('con sesión guarda al paciente, crea la cita y va a la confirmación', async () => {
-    localStorage.setItem('usuario', JSON.stringify({ id: 5, rol: 'PACIENTE' }))
+    sesionPaciente()
     sessionStorage.setItem('cita', JSON.stringify(cita))
     sessionStorage.setItem('datosPaciente', JSON.stringify(paciente))
     apiFetch
@@ -149,7 +163,7 @@ describe('Pago', () => {
   })
 
   it('muestra un error si el back rechaza la cita', async () => {
-    localStorage.setItem('usuario', JSON.stringify({ id: 5, rol: 'PACIENTE' }))
+    sesionPaciente()
     sessionStorage.setItem('cita', JSON.stringify(cita))
     sessionStorage.setItem('datosPaciente', JSON.stringify(paciente))
     apiFetch

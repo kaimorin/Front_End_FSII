@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useNavigate } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import Datos from './Datos.jsx'
-import { apiGet } from '../api'
+import { apiGet, guardarSesion, cerrarSesion } from '../api'
 
 // Mock de react-router para capturar la función navigate
 vi.mock('react-router', async (importOriginal) => {
@@ -25,9 +25,22 @@ describe('Datos', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
+    cerrarSesion()
     sessionStorage.clear()
     localStorage.clear()
   })
+
+  function sesionAna() {
+    guardarSesion({
+      accessToken: 'fake-access-token',
+      refreshToken: 'fake-refresh-token',
+      id: 5,
+      nombre: 'Ana',
+      apellido: 'Pérez',
+      correo: 'ana@correo.cl',
+      rol: 'PACIENTE',
+    })
+  }
 
   it('renderiza la barra de pasos y todos los campos del formulario', () => {
     render(
@@ -100,7 +113,7 @@ describe('Datos', () => {
   })
 
   it('con sesión iniciada autocompleta los datos del usuario y de su ficha de paciente', async () => {
-    localStorage.setItem('usuario', JSON.stringify({ id: 5, nombre: 'Ana', rol: 'PACIENTE' }))
+    sesionAna()
     apiGet.mockImplementation(async (ruta) => {
       if (ruta === '/usuarios/5') {
         return { nombre: 'Ana', apellido: 'Pérez', rut: '12.345.678-9', telefono: '+56 9 12345678' }
@@ -124,7 +137,7 @@ describe('Datos', () => {
   })
 
   it('al elegir "Para conocido o familiar" vacía el formulario y al volver a "Para mí" recupera los datos', async () => {
-    localStorage.setItem('usuario', JSON.stringify({ id: 5, nombre: 'Ana', rol: 'PACIENTE' }))
+    sesionAna()
     apiGet.mockImplementation(async (ruta) => {
       if (ruta === '/usuarios/5') {
         return { nombre: 'Ana', apellido: 'Pérez', rut: '12.345.678-9', telefono: '+56 9 12345678' }

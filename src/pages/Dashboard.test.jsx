@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import Dashboard from './Dashboard.jsx'
-import { apiGet } from '../api'
+import { apiGet, guardarSesion, cerrarSesion } from '../api'
 import { fechaLarga } from '../utils/formato'
 
 vi.mock('../api', async (importOriginal) => ({
@@ -30,8 +30,17 @@ function renderizar() {
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    cerrarSesion()
     localStorage.clear()
-    localStorage.setItem('usuario', JSON.stringify({ rol: 'ADMIN', nombre: 'Ana' }))
+    guardarSesion({
+      accessToken: 'fake-access-token',
+      refreshToken: 'fake-refresh-token',
+      id: 1,
+      nombre: 'Ana',
+      apellido: 'Admin',
+      correo: 'ana@correo.cl',
+      rol: 'ADMIN',
+    })
     apiGet.mockImplementation(async (ruta) => (ruta === '/citas' ? citas : pacientes))
   })
 
@@ -39,7 +48,7 @@ describe('Dashboard', () => {
     renderizar()
 
     expect(screen.getByRole('heading', { name: /panel general/i, level: 1 })).toBeInTheDocument()
-    expect(screen.getByText('Bienvenido de vuelta, Ana')).toBeInTheDocument()
+    expect(screen.getByText((_, el) => el?.textContent === 'Bienvenido de vuelta, Ana')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Buscar paciente, RUT o ID...')).toBeInTheDocument()
     await screen.findByText('Lucas Gómez')
   })
@@ -49,10 +58,10 @@ describe('Dashboard', () => {
     await screen.findByText('Lucas Gómez')
 
     expect(screen.getByText('Citas de Hoy')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument() // Lucas y Elena son de hoy; Camila está cancelada
-    expect(screen.getByText('3')).toBeInTheDocument() // pacientes registrados
-    expect(screen.getByText('$41,650')).toBeInTheDocument() // solo Lucas está confirmado
-    expect(screen.getByText('1')).toBeInTheDocument() // Elena está pendiente
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('$41,650')).toBeInTheDocument()
+    expect(screen.getByText('1')).toBeInTheDocument()
   })
 
   it('lista las próximas citas sin mostrar las canceladas y permite buscar', async () => {
