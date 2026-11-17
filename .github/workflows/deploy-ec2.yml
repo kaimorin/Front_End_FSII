@@ -34,10 +34,41 @@ jobs:
         if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') && (github.event_name != 'workflow_dispatch' || inputs.run_e2e) }}
         run: npm run test:e2e
 
-  deploy:
+  build:
     needs: test
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build del front en GitHub Actions
+        run: npm run build
+        env:
+          VITE_API_URL: /api
+
+      - name: Subir compilado como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bajar compilado
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: Checkout codigo
         uses: actions/checkout@v4
 
@@ -46,15 +77,19 @@ jobs:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: test -n "$BACKEND_URL" || { echo "Falta el secret BACKEND_URL"; exit 1; }
 
-      - name: Copiar archivos a EC2
+      - name: Copiar SOLO el compilado + archivos de deploy a EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT }}
-          source: '.'
+          
+          # lo que necesita Docker para servirlo
+          source: 'dist/*,Dockerfile,docker-compose.yml,nginx.conf.template'
           target: '/home/${{ secrets.EC2_USER }}/micros/nutrivida-front'
+          strip_components: 1
+          rm: true
 
       - name: Build y levantar con Docker Compose
         uses: appleboy/ssh-action@v1.0.3

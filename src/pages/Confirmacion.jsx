@@ -6,7 +6,26 @@ function Confirmacion() {
   // La cita la deja guardada Pago.jsx después de crearla en el back
   const citaGuardada = sessionStorage.getItem('cita')
   const cita = citaGuardada ? JSON.parse(citaGuardada) : null
-  const doctor = cita?.doctor || 'Por confirmar'
+
+  // Sesión para el paciente - respaldo si la cita no trae paciente
+  const sesionGuardada = localStorage.getItem('sesion')
+  const sesion = sesionGuardada ? JSON.parse(sesionGuardada) : null
+
+  // Doctor: aguanta doctor, especialistaNombre, nombreEspecialista, especialista
+  const doctor = cita?.doctor
+    || cita?.especialistaNombre
+    || cita?.nombreEspecialista
+    || cita?.especialista
+    || 'Por confirmar'
+
+  // Paciente: primero de la cita, si no de la sesión
+  const paciente = cita?.paciente
+    || (cita?.pacienteNombre ? `${cita.pacienteNombre} ${cita.pacienteApellido || ''}`.trim() : '')
+    || (sesion ? `${sesion.nombre || ''} ${sesion.apellido || ''}`.trim() : '')
+    || 'Paciente'
+
+  const correoPaciente = cita?.pacienteCorreo || sesion?.correo || ''
+
   const fecha = cita?.fecha || 'Fecha por confirmar'
   const hora = cita?.hora || 'Hora por confirmar'
   const especialidad = nombreEspecialidad(cita?.especialidad)
@@ -31,6 +50,8 @@ function Confirmacion() {
 
           <ul className="lista-detalles-cita">
             {cita?.id && <li><strong>N.º de reserva:</strong> {cita.id}</li>}
+            <li><strong>Paciente:</strong> {paciente}</li>
+            {correoPaciente && <li><strong>Correo:</strong> {correoPaciente}</li>}
             <li><strong>Especialista:</strong> {doctor}</li>
             {especialidad && <li><strong>Especialidad:</strong> {especialidad}</li>}
             {cita?.modalidad && <li><strong>Modalidad:</strong> {cita.modalidad}</li>}

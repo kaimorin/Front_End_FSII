@@ -6,6 +6,7 @@ import Confirmacion from './Confirmacion.jsx'
 describe('Confirmacion', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   it('renderiza el mensaje de éxito, recomendaciones y botón de volver', () => {
@@ -37,10 +38,13 @@ describe('Confirmacion', () => {
     expect(screen.getByText('Por confirmar')).toBeInTheDocument()
     expect(screen.getByText('Fecha por confirmar')).toBeInTheDocument()
     expect(screen.getByText('Hora por confirmar')).toBeInTheDocument()
+    // Sin sesión ni cita, el paciente cae al fallback
+    expect(screen.getByText('Paciente')).toBeInTheDocument()
 
     // Sin cita no se muestran la especialidad ni el número de reserva
     expect(screen.queryByText(/especialidad:/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/reserva:/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/correo:/i)).not.toBeInTheDocument()
   })
 
   it('muestra los detalles de la cita guardada, con el nombre de la especialidad y el número de reserva', () => {
@@ -51,6 +55,8 @@ describe('Confirmacion', () => {
       modalidad: 'Online',
       fecha: 'Lunes, 10 de marzo de 2025',
       hora: '3:30 PM',
+      paciente: 'Yvanni Munoz',
+      pacienteCorreo: 'yva@gmail.com',
     }))
 
     render(
@@ -65,5 +71,55 @@ describe('Confirmacion', () => {
     expect(screen.getByText('Online')).toBeInTheDocument()
     expect(screen.getByText('Lunes, 10 de marzo de 2025')).toBeInTheDocument()
     expect(screen.getByText('3:30 PM')).toBeInTheDocument()
+    // NUEVO: paciente y correo que ahora guarda Pago.jsx
+    expect(screen.getByText('Yvanni Munoz')).toBeInTheDocument()
+    expect(screen.getByText('yva@gmail.com')).toBeInTheDocument()
+  })
+
+  it('muestra el paciente desde la sesión cuando la cita no trae paciente', () => {
+    sessionStorage.setItem('cita', JSON.stringify({
+      id: 12,
+      doctor: 'Maximo Tul Onazzo',
+      especialidad: 'nutricion-deportiva',
+      modalidad: 'Online',
+      fecha: 'Lunes, 10 de marzo de 2025',
+      hora: '3:30 PM',
+    }))
+    localStorage.setItem('sesion', JSON.stringify({
+      nombre: 'Yvanni',
+      apellido: 'Munoz',
+      correo: 'yva@gmail.com',
+    }))
+
+    render(
+      <MemoryRouter>
+        <Confirmacion />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Yvanni Munoz')).toBeInTheDocument()
+    expect(screen.getByText('yva@gmail.com')).toBeInTheDocument()
+    expect(screen.getByText('Maximo Tul Onazzo')).toBeInTheDocument()
+  })
+
+  it('acepta doctor guardado como especialistaNombre', () => {
+    sessionStorage.setItem('cita', JSON.stringify({
+      id: 13,
+      especialistaNombre: 'Maria de Judas',
+      especialidad: 'control-peso',
+      fecha: 'Lunes, 10 de marzo de 2025',
+      hora: '11:00 AM',
+      pacienteNombre: 'Ana',
+      pacienteApellido: 'Pérez',
+    }))
+
+    render(
+      <MemoryRouter>
+        <Confirmacion />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByText('Maria de Judas')).toBeInTheDocument()
+    expect(screen.getByText('Ana Pérez')).toBeInTheDocument()
   })
 })

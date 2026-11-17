@@ -83,8 +83,25 @@ function Pago() {
       }
 
       // 3. Deja la cita creada (con su número) para la pantalla de confirmación
+      // CAMBIO: guarda paciente + doctor normalizado ANTES de borrar datosPaciente
       const creada = await resCita.json().catch(() => ({}))
-      sessionStorage.setItem('cita', JSON.stringify({ ...cita, id: creada.id, metodoPago: metodo }))
+      sessionStorage.setItem('cita', JSON.stringify({
+        ...cita,
+        id: creada.id,
+        metodoPago: metodo,
+        doctor: cita.doctor
+          || cita.especialistaNombre
+          || cita.nombreEspecialista
+          || cita.especialista
+          || (cita.especialistaId ? `Especialista #${cita.especialistaId}` : ''),
+        especialidad: cita.especialidad || cita.especialidadNombre || '',
+        paciente: `${paciente.nombre || ''} ${paciente.apellido || ''}`.trim(),
+        pacienteNombre: paciente.nombre,
+        pacienteApellido: paciente.apellido,
+        pacienteRut: rut,
+        pacienteTelefono: paciente.telefono,
+        pacienteCorreo: paciente.correo || usuario?.correo || '',
+      }))
       sessionStorage.removeItem('datosPaciente') // evita pagar dos veces la misma reserva
 
       navigate('/reserva/confirmacion')

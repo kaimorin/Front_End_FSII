@@ -3,6 +3,12 @@ import { test, expect } from '@playwright/test';
 test.describe('Flujo de Agendamiento - Paso 3 (Pago y Confirmación)', () => {
   test('Debe seleccionar pasarela, validar montos exactos y finalizar pago', async ({ page }) => {
     // 1. Mock ANTES del goto, si no las primeras llamadas se van al back real
+    // En Playwright la última ruta registrada gana, por eso el genérico va primero
+    // y los específicos después. Si **/api/** queda al final, tapa a **/api/citas
+    // y el back devuelve {} en vez de { id: 999 }.
+    await page.route('**/api/**', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    })
     await page.route('**/api/pacientes', async (route) => {
       await route.fulfill({
         status: 200,
@@ -16,9 +22,6 @@ test.describe('Flujo de Agendamiento - Paso 3 (Pago y Confirmación)', () => {
         contentType: 'application/json',
         body: JSON.stringify({ id: 999, estado: 'Confirmado' }),
       })
-    })
-    await page.route('**/api/**', async (route) => {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
     })
 
     // 2. Sembrar sesión ANTES del goto, con la clave que realmente lee la app: 'sesion'
@@ -62,5 +65,32 @@ test.describe('Flujo de Agendamiento - Paso 3 (Pago y Confirmación)', () => {
 
     // 8. Validar la navegación final hacia la confirmación
     await expect(page).toHaveURL(/.*#\/reserva\/confirmacion/);
+
+    // 9. Validar que la confirmación SÍ muestra paciente y doctor
+    await expect(page.getByRole('heading', { name: /¡has agendado tu cita con éxito!/i })).toBeVisible();
+    await expect(page.getByText('Yvanni Muñoz')).toBeVisible();
+    await expect(page.getByText('Maria de Judas')).toBeVisible();
+    await expect(page.getByText('yvanni@correo.cl')).toBeVisible();
+    await expect(page.getByText('Control de Peso')).toBeVisible();
+    // El 999 está partido: <li><strong>N.º de reserva:</strong> 999</li>
+    // getByText('999') no lo encuentra, hay que buscar el <li> completo
+    await expect(page.locator('li', { hasText: 'N.º de reserva:' })).toContainText('999');
+    await expect(page.getByText('Lunes, 10 de marzo de 2025')).toBeVisible();
+    await expect(page.getByText('10:00 AM')).toBeVisible();
+
+    // 10. Validar que la cita guardada ya lleva paciente + doctor para Confirmacion
+    const citaGuardada = await page.evaluate(() => JSON.parse(sessionStorage.getItem('cita')));
+    expect(citaGuardada).toMatchObject({
+      id: 999,
+      doctor: 'Maria de Judas',
+      especialidad: 'control-peso',
+      paciente: 'Yvanni Muñoz',
+      pacienteNombre: 'Yvanni',
+      pacienteApellido: 'Muñoz',
+      pacienteRut: '12.345.678-K',
+    });
+    // datosPaciente se borra para evitar doble pago
+    const datosPaciente = await page.evaluate(() => sessionStorage.getItem('datosPaciente'));
+    expect(datosPaciente).toBeNull();
   });
 });

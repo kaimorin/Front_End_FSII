@@ -158,8 +158,44 @@ describe('Pago', () => {
     expect(JSON.parse(apiFetch.mock.calls[0][1].body).rut).toBe('12.345.678-K')
 
     // La cita queda guardada con su número y los datos del paciente se borran
-    expect(JSON.parse(sessionStorage.getItem('cita')).id).toBe(33)
+    const citaGuardada = JSON.parse(sessionStorage.getItem('cita'))
+    expect(citaGuardada.id).toBe(33)
     expect(sessionStorage.getItem('datosPaciente')).toBeNull()
+
+    // NUEVO: Pago.jsx ahora guarda paciente + doctor para Confirmacion.jsx
+    expect(citaGuardada.doctor).toBe('Maria de Judas')
+    expect(citaGuardada.especialidad).toBe('control-peso')
+    expect(citaGuardada.paciente).toBe('Ana Pérez')
+    expect(citaGuardada.pacienteNombre).toBe('Ana')
+    expect(citaGuardada.pacienteApellido).toBe('Pérez')
+    expect(citaGuardada.pacienteRut).toBe('12.345.678-K')
+    expect(citaGuardada.pacienteTelefono).toBe('+56 9 12345678')
+    // paciente.correo no venía en datosPaciente, cae al correo de la sesión
+    expect(citaGuardada.pacienteCorreo).toBe('ana@correo.cl')
+    expect(citaGuardada.metodoPago).toBe('webpay')
+  })
+
+  it('normaliza el doctor cuando Agenda lo guarda como especialistaNombre', async () => {
+    sesionPaciente()
+    sessionStorage.setItem('cita', JSON.stringify({
+      especialistaNombre: 'Maria de Judas',
+      especialidad: 'control-peso',
+      fecha: 'Lunes, 10 de marzo de 2025',
+      hora: '11:00 AM',
+      modalidad: 'Online',
+    }))
+    sessionStorage.setItem('datosPaciente', JSON.stringify(paciente))
+    apiFetch
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ id: 34 }) })
+    renderizar()
+
+    await userEvent.click(screen.getByRole('link', { name: /pagar/i }))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/reserva/confirmacion'))
+
+    const citaGuardada = JSON.parse(sessionStorage.getItem('cita'))
+    expect(citaGuardada.doctor).toBe('Maria de Judas')
+    expect(citaGuardada.paciente).toBe('Ana Pérez')
   })
 
   it('muestra un error si el back rechaza la cita', async () => {
