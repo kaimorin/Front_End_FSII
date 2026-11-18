@@ -10,6 +10,13 @@ on:
         type: boolean
         default: true
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-front-ec2
+  cancel-in-progress: false
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -73,17 +80,25 @@ jobs:
           BACKEND_URL: ${{ secrets.BACKEND_URL }}
         run: test -n "$BACKEND_URL" || { echo "Falta el secret BACKEND_URL"; exit 1; }
 
-      - name: Copiar SOLO el compilado + archivos de deploy a EC2
+      - name: Listar archivos que se van a subir
+        run: |
+          ls -la
+          ls -la dist/ | head -20
+          test -f Dockerfile || { echo "Falta Dockerfile en el repo"; exit 1; }
+          test -f docker-compose.yml || { echo "Falta docker-compose.yml en el repo"; exit 1; }
+          test -f nginx.conf.template || { echo "Falta nginx.conf.template en el repo"; exit 1; }
+
+      - name: Copiar compilado + archivos de deploy a EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: ${{ secrets.EC2_PORT }}
-          source: 'dist/*,Dockerfile,docker-compose.yml,nginx.conf.template'
+          source: 'dist,Dockerfile,docker-compose.yml,nginx.conf.template'
           target: '/home/${{ secrets.EC2_USER }}/micros/nutrivida-front'
-          strip_components: 1
-          rm: true
+          rm: false
+          overwrite: true
 
       - name: Build y levantar con Docker Compose
         uses: appleboy/ssh-action@v1.0.3
@@ -94,12 +109,16 @@ jobs:
           port: ${{ secrets.EC2_PORT }}
           script: |
             cd /home/${{ secrets.EC2_USER }}/micros/nutrivida-front
+            ls -la
+            ls -la dist/ | head -20
             echo "BACKEND_URL=${{ secrets.BACKEND_URL }}" > .env
-            docker compose down
-            docker compose up -d --build
+            docker compose down || true
+            docker compose build --no-cache
+            docker compose up -d --force-recreate
             sleep 5
+            docker compose ps
             if curl -sf http://localhost/api/especialistas/activos > /dev/null; then
               echo "OK: el front se conecta con el back"
             else
-              echo "AVISO: el front no alcanza al back (revisa el security group y que el back estÃ© encendido)"
+              echo "AVISO: el front no alcanza al back (revisa el security group y que el back este encendido)"
             fi
