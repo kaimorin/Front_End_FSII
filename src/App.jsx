@@ -22,7 +22,7 @@ import Pacientes from './pages/Pacientes.jsx'
 import Especialistas from './pages/Especialistas.jsx'
 import Reportes from './pages/Reportes.jsx'
 import './App.css'
-import RutaAdmin from './components/RutaAdmin.jsx'
+import RutaAdmin from './pages/RutaAdmin.jsx'
 
 export default function App() {
   return (
@@ -33,6 +33,7 @@ export default function App() {
         <Route path="login" element={<Login />} />
         <Route path="registro" element={<Registro />} />
         <Route path="perfil" element={<Perfil />} />
+        <Route path="404" element={<NotFound />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -43,7 +44,6 @@ export default function App() {
         <Route path="datos" element={<Datos />} />
         <Route path="pago" element={<Pago />} />
         <Route path="confirmacion" element={<Confirmacion />} />
-        
       </Route>
 
       {/* panel admin (solo ADMIN) */}
