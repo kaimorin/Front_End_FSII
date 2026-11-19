@@ -1,6 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiPost } from '../lib/api'
+const apiPost = (path, body) =>
+  fetch(`/api${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  })
 
 const DOCTORES_MAP = {
   'Maria de Judas': 1,

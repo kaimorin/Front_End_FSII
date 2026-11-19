@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiGet } from '../lib/api'
+const apiGet = (path) => fetch(`/api${path}`)
 
 const DOCTORES_BASE = [
   { id: 1, nombre: 'Maria de Judas', especialidad: 'Nutrición Clínica', modalidad: 'Presencial y Online', precioBase: 35000 },
