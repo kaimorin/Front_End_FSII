@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { apiFetch, cerrarSesion, obtenerUsuario, useUsuario, formatearRut } from '../api'
+import { dinero, nombreEspecialidad, PRECIO_CITA } from '../utils/formato'
 import bannerPago from '../assets/banner-pago.jpg'
 import webpay from '../assets/webpay.png'
 import mercadopago from '../assets/mercadopago.png'
 import balanza from '../assets/resumen-balanza.jpg'
-import { calcularPrecio, dinero, nombreEspecialidad } from '../utils/formato'
 
 function leerSession(clave) {
   return JSON.parse(sessionStorage.getItem(clave) || 'null')
@@ -20,7 +20,7 @@ function Pago() {
 
   // Datos para el resumen (los guardó el paso 2: Agenda)
   const resumen = leerSession('cita')
-  const { neto, iva, total } = calcularPrecio(resumen?.doctor)
+  const iva = Math.round(PRECIO_CITA * 0.19)
 
   // El back responde 403 (o 401) si el token falta o venció
   function sesionVencida(res) {
@@ -174,7 +174,7 @@ function Pago() {
               </strong>
               <span className="nombre-doc-resumen">{resumen?.doctor ? resumen.doctor.toUpperCase() : 'DOCTOR POR DEFINIR'}</span>
               {resumen && <span>{resumen.fecha} · {resumen.hora} · {resumen.modalidad}</span>}
-              <span className="precio-item-resumen">{dinero(neto)}</span>
+              <span className="precio-item-resumen">{dinero(PRECIO_CITA)}</span>
             </div>
           </div>
 
@@ -203,7 +203,7 @@ function Pago() {
 
           <div className="fila-total-final">
             <strong>TOTAL</strong>
-            <strong>{dinero(total)}</strong>
+            <strong>{dinero(PRECIO_CITA + iva)}</strong>
           </div>
         </aside>
       </section>

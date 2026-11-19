@@ -61,18 +61,3 @@ export function esDelMes(textoFecha, hoy = new Date()) {
 export function coincide(busqueda, campos) {
   return campos.join(' ').toLowerCase().includes(busqueda.trim().toLowerCase())
 }
-
-export const PRECIOS = {
-  'maria de judas': 35000,
-  "maximo tul'onazo": 40000,
-  'maximo tul onazzo': 40000,
-  'mario di west': 30000,
-  "shaqueal o'neal": 38000,
-  'shaqueal oneal': 38000,
-}
-
-export function calcularPrecio(doctor) {
-  const neto = PRECIOS[String(doctor || '').toLowerCase()] || PRECIO_CITA
-  const iva = Math.round(neto * 0.19)
-  return { neto, iva, total: neto + iva }
-}
