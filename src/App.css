@@ -2506,3 +2506,189 @@ main:has(.error) {
     justify-content: center;
   }
 }
+
+/* ===== Reserva: especialistas, valores y errores claros ===== */
+.alerta-error {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: calc(100% - 2rem);
+  max-width: 900px;
+  margin: 1rem auto;
+  padding: 0.9rem 1.2rem;
+  background: #fff5f5;
+  border: 1px solid #f2c2c2;
+  border-left: 5px solid #c62828;
+  border-radius: 10px;
+  color: #842020;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+  box-shadow: 0 4px 14px rgba(160, 35, 35, 0.10);
+  animation: alerta-entrada 0.25s ease;
+}
+
+.alerta-error::before {
+  content: '!';
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #c62828;
+  color: #fff;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.columna-metodos-pago .alerta-error {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+@keyframes alerta-entrada {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.titulo-seleccion-especialista {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  color: #222;
+}
+
+.especialidad-doc {
+  display: block;
+  color: #2e642c;
+  font-size: 0.84rem;
+  font-weight: 700;
+  margin: 0.15rem 0 0.3rem;
+}
+
+.precio-especialista {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 6px;
+  background: #eff7eb;
+  color: #2e5c26;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.bloque-seleccion-modalidad h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1rem;
+}
+
+.resumen-especialista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.9rem 1rem;
+  background: #f5f8f2;
+  border: 1px solid #dce8d5;
+  border-radius: 9px;
+  color: #53634d;
+  font-size: 0.85rem;
+}
+
+.resumen-especialista strong {
+  color: #254d20;
+  font-size: 0.98rem;
+}
+
+.cal-matriz-numeros .cal-dia {
+  min-height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font: inherit;
+  color: #333;
+  cursor: pointer;
+}
+
+.cal-matriz-numeros .cal-dia:hover:not(:disabled):not(.dia-marcado) {
+  background: #e6f0df;
+}
+
+.cal-matriz-numeros .cal-dia.dia-marcado {
+  background: #2a5a25;
+  color: #fff;
+}
+
+.cal-matriz-numeros .cal-dia.dia-domingo:not(.dia-marcado) {
+  color: #bd5555;
+}
+
+.cal-matriz-numeros .cal-dia:disabled {
+  color: #bbb;
+  cursor: default;
+}
+
+.form-especialista {
+  align-items: end;
+}
+
+.campo-precio-especialista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #444;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.campo-precio-especialista input {
+  width: 100%;
+  min-width: 0;
+}
+
+.nota-total-pago {
+  margin: 0.85rem 0 0;
+  color: #777;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.btn-pagar-cargando {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .alerta-error {
+    width: calc(100% - 1.5rem);
+    padding: 0.8rem 0.9rem;
+    font-size: 0.88rem;
+  }
+
+  .columna-doctores {
+    min-width: 0;
+  }
+
+  .tarjeta-radio-doc {
+    min-width: 0;
+  }
+}
+
+.titulo-form-especialista {
+  grid-column: 1 / -1;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.acciones-form-especialista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aviso-sin-especialistas {
+  padding: 1rem;
+  background: #fff8e8;
+  border: 1px solid #ead7a6;
+  border-radius: 8px;
+  color: #795b19;
+}

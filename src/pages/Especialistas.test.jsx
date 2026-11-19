@@ -11,8 +11,8 @@ vi.mock('../api', async (importOriginal) => ({
 }))
 
 const lista = [
-  { id: 1, nombre: 'Maria de Judas', especialidad: 'Nutrición Clínica', modalidad: 'Presencial y Online', descripcion: 'Experta', activo: true },
-  { id: 2, nombre: 'Mario Di West', especialidad: 'Control de Peso', modalidad: 'Online', descripcion: 'Centrado', activo: false },
+  { id: 1, nombre: 'Maria de Judas', especialidad: 'Nutrición Clínica', modalidad: 'Presencial y Online', descripcion: 'Experta', precioBase: 42000, activo: true },
+  { id: 2, nombre: 'Mario Di West', especialidad: 'Control de Peso', modalidad: 'Online', descripcion: 'Centrado', precioBase: 35000, activo: false },
 ]
 
 describe('Especialistas', () => {
@@ -25,7 +25,7 @@ describe('Especialistas', () => {
     render(<Especialistas />)
 
     expect(screen.getByRole('heading', { name: /^especialistas$/i, level: 1 })).toBeInTheDocument()
-    expect(screen.getByText('Equipo de profesionales')).toBeInTheDocument()
+    expect(screen.getByText('Equipo de profesionales y precios de atención')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /\+ nuevo especialista/i })).toBeInTheDocument()
     await screen.findByText('Maria de Judas')
   })
@@ -36,6 +36,7 @@ describe('Especialistas', () => {
     expect(await screen.findByText('Maria de Judas')).toBeInTheDocument()
     expect(screen.getByText('Nutrición Clínica')).toBeInTheDocument()
     expect(screen.getByText('Presencial y Online')).toBeInTheDocument()
+    expect(screen.getByText('$42,000')).toBeInTheDocument()
     expect(screen.getByText('Mario Di West')).toBeInTheDocument()
     expect(screen.getByText('Activo')).toBeInTheDocument()
     expect(screen.getByText('Inactivo')).toBeInTheDocument()
@@ -45,7 +46,7 @@ describe('Especialistas', () => {
   it('crea un especialista nuevo con POST', async () => {
     apiFetch.mockResolvedValue({
       ok: true,
-      json: async () => ({ id: 3, nombre: 'Dra. Nueva', especialidad: 'Nutrición Clínica', modalidad: 'Presencial', activo: true }),
+      json: async () => ({ id: 3, nombre: 'Dra. Nueva', especialidad: 'Nutrición Clínica', modalidad: 'Presencial', precioBase: 35000, activo: true }),
     })
     render(<Especialistas />)
     await screen.findByText('Maria de Judas')
@@ -55,7 +56,27 @@ describe('Especialistas', () => {
     await userEvent.click(screen.getByRole('button', { name: /guardar especialista/i }))
 
     expect(apiFetch).toHaveBeenCalledWith('/especialistas', expect.objectContaining({ method: 'POST' }))
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body).precioBase).toBe(35000)
     expect(await screen.findByText('Dra. Nueva')).toBeInTheDocument()
+  })
+
+  it('permite cambiar el precio de un especialista existente', async () => {
+    apiFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...lista[0], precioBase: 52000 }),
+    })
+    render(<Especialistas />)
+    await screen.findByText('Maria de Judas')
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+    const precio = screen.getByLabelText(/precio base/i)
+    await userEvent.clear(precio)
+    await userEvent.type(precio, '52000')
+    await userEvent.click(screen.getByRole('button', { name: /guardar cambios/i }))
+
+    expect(apiFetch).toHaveBeenCalledWith('/especialistas/1', expect.objectContaining({ method: 'PUT' }))
+    expect(JSON.parse(apiFetch.mock.calls[0][1].body).precioBase).toBe(52000)
+    expect(await screen.findByText('$52,000')).toBeInTheDocument()
   })
 
   it('activa o desactiva un especialista con PUT', async () => {

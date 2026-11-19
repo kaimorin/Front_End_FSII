@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { nombreEspecialidad } from '../utils/formato'
+import { dinero, nombreEspecialidad, totalCita } from '../utils/formato'
 import bannere from '../assets/banner-exito.jpg'
 
 function Confirmacion() {
@@ -57,6 +57,9 @@ function Confirmacion() {
             {cita?.modalidad && <li><strong>Modalidad:</strong> {cita.modalidad}</li>}
             <li><strong>Fecha:</strong> {fecha}</li>
             <li><strong>Hora:</strong> {hora}</li>
+            {cita?.precioBase > 0 && <li><strong>Precio base:</strong> {dinero(cita.precioBase)}</li>}
+            {cita?.iva > 0 && <li><strong>IVA (19%):</strong> {dinero(cita.iva)}</li>}
+            {cita?.total > 0 && <li><strong>Total de la reserva:</strong> {dinero(totalCita(cita))}</li>}
           </ul>
 
           <h3 className="subtitulo-recomendaciones">Recomendaciones para tu visita:</h3>

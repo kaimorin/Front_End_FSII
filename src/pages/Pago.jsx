@@ -1,14 +1,26 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { apiFetch, cerrarSesion, obtenerUsuario, useUsuario, formatearRut } from '../api'
-import { dinero, nombreEspecialidad, PRECIO_CITA } from '../utils/formato'
+import { calcularTotales, dinero, nombreEspecialidad, PRECIO_CITA } from '../utils/formato'
 import bannerPago from '../assets/banner-pago.jpg'
 import webpay from '../assets/webpay.png'
 import mercadopago from '../assets/mercadopago.png'
 import balanza from '../assets/resumen-balanza.jpg'
 
 function leerSession(clave) {
-  return JSON.parse(sessionStorage.getItem(clave) || 'null')
+  try {
+    return JSON.parse(sessionStorage.getItem(clave) || 'null')
+  } catch {
+    return null
+  }
+}
+
+async function mensajeDelServidor(res, mensajeAlternativo) {
+  const respuesta = await res.json().catch(() => ({}))
+  if (respuesta.campos) return Object.values(respuesta.campos).join(' ')
+  if (respuesta.error) return respuesta.error
+  if (respuesta.detalle) return respuesta.detalle
+  return mensajeAlternativo
 }
 
 function Pago() {
@@ -18,11 +30,10 @@ function Pago() {
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
-  // Datos para el resumen (los guardó el paso 2: Agenda)
   const resumen = leerSession('cita')
-  const iva = Math.round(PRECIO_CITA * 0.19)
+  const precioBase = Number(resumen?.precioBase) > 0 ? Number(resumen.precioBase) : PRECIO_CITA
+  const totales = calcularTotales(precioBase)
 
-  // El back responde 403 (o 401) si el token falta o venció
   function sesionVencida(res) {
     if (res.status === 401 || res.status === 403) {
       cerrarSesion()
@@ -48,27 +59,36 @@ function Pago() {
       setError('Faltan datos de tu reserva. Vuelve al paso 1.')
       return
     }
+    if (!cita.especialistaId || !cita.fechaISO) {
+      setError('La reserva no tiene un especialista o fecha válidos. Vuelve al paso 2 y selecciónalos nuevamente.')
+      return
+    }
 
-    const rut = formatearRut(paciente.rut) // el back exige 12.345.678-9
-
+    const rut = formatearRut(paciente.rut)
     setEnviando(true)
+
     try {
-      // 1. Guarda (o actualiza) al paciente
+      // 1. Guarda o actualiza la ficha del paciente.
       const resPaciente = await apiFetch('/pacientes', {
         method: 'POST',
         body: JSON.stringify({ ...paciente, rut }),
       })
       if (sesionVencida(resPaciente)) return
       if (!resPaciente.ok) {
-        setError('No se pudieron guardar los datos del paciente. Revisa tu RUT.')
+        setError(await mensajeDelServidor(resPaciente, 'No se pudieron guardar los datos del paciente. Revisa tu RUT.'))
         return
       }
 
-      // 2. Crea la cita
+      // 2. El backend obtiene el precio, nombre y especialidad desde especialistaId.
+      // No se envían importes calculados por el navegador como fuente de verdad.
       const resCita = await apiFetch('/citas', {
         method: 'POST',
         body: JSON.stringify({
-          ...cita,
+          especialistaId: cita.especialistaId,
+          modalidad: cita.modalidad,
+          fecha: cita.fecha,
+          fechaISO: cita.fechaISO,
+          hora: cita.hora,
           metodoPago: metodo,
           pacienteNombre: paciente.nombre,
           pacienteApellido: paciente.apellido,
@@ -78,23 +98,25 @@ function Pago() {
       })
       if (sesionVencida(resCita)) return
       if (!resCita.ok) {
-        setError('No se pudo crear la cita. Intenta nuevamente.')
+        setError(await mensajeDelServidor(resCita, 'No se pudo crear la cita. Intenta nuevamente.'))
         return
       }
 
-      // 3. Deja la cita creada (con su número) para la pantalla de confirmación
-      // CAMBIO: guarda paciente + doctor normalizado ANTES de borrar datosPaciente
-      const creada = await resCita.json().catch(() => ({}))
+      const creada = await resCita.json()
       sessionStorage.setItem('cita', JSON.stringify({
         ...cita,
         id: creada.id,
-        metodoPago: metodo,
-        doctor: cita.doctor
-          || cita.especialistaNombre
-          || cita.nombreEspecialista
-          || cita.especialista
-          || (cita.especialistaId ? `Especialista #${cita.especialistaId}` : ''),
-        especialidad: cita.especialidad || cita.especialidadNombre || '',
+        especialistaId: creada.especialistaId,
+        doctor: creada.doctor || cita.doctor,
+        especialidad: creada.especialidad || cita.especialidad,
+        modalidad: creada.modalidad || cita.modalidad,
+        fecha: creada.fecha || cita.fecha,
+        fechaISO: creada.fechaISO || cita.fechaISO,
+        hora: creada.hora || cita.hora,
+        metodoPago: creada.metodoPago || metodo,
+        precioBase: Number(creada.precioBase ?? totales.precioBase),
+        iva: Number(creada.iva ?? totales.iva),
+        total: Number(creada.total ?? totales.total),
         paciente: `${paciente.nombre || ''} ${paciente.apellido || ''}`.trim(),
         pacienteNombre: paciente.nombre,
         pacienteApellido: paciente.apellido,
@@ -102,11 +124,10 @@ function Pago() {
         pacienteTelefono: paciente.telefono,
         pacienteCorreo: paciente.correo || usuario?.correo || '',
       }))
-      sessionStorage.removeItem('datosPaciente') // evita pagar dos veces la misma reserva
-
+      sessionStorage.removeItem('datosPaciente')
       navigate('/reserva/confirmacion')
     } catch {
-      setError('No se pudo conectar con el servidor.')
+      setError('No se pudo conectar con el servidor. Revisa tu conexión e inténtalo nuevamente.')
     } finally {
       setEnviando(false)
     }
@@ -129,7 +150,7 @@ function Pago() {
           <h2 className="titulo-seccion-pago">Metodo de Pago</h2>
 
           <label className="tarjeta-metodo">
-            <input type="radio" name="metodo_pago" value="webpay" defaultChecked onChange={() => setMetodo('webpay')} />
+            <input type="radio" name="metodo_pago" value="webpay" checked={metodo === 'webpay'} onChange={() => setMetodo('webpay')} />
             <div className="circulo-check"></div>
             <div className="info-metodo">
               <strong>Webpay</strong>
@@ -139,7 +160,7 @@ function Pago() {
           </label>
 
           <label className="tarjeta-metodo">
-            <input type="radio" name="metodo_pago" value="mercadopago" onChange={() => setMetodo('mercadopago')} />
+            <input type="radio" name="metodo_pago" value="mercadopago" checked={metodo === 'mercadopago'} onChange={() => setMetodo('mercadopago')} />
             <div className="circulo-check"></div>
             <div className="info-metodo">
               <p><strong>Mercado Pago</strong> es la billetera digital de Mercado Libre que permite a personas y empresas administrar dinero, pagar y cobrar de manera 100% online.</p>
@@ -153,10 +174,17 @@ function Pago() {
             </p>
           )}
 
-          {error && <p className="error-texto">{error}</p>}
+          {error && <div className="alerta-error" role="alert">{error}</div>}
 
           <div className="fila-botones-pago">
-            <Link to="/reserva/confirmacion" className="btn-pagar" onClick={pagar}>Pagar</Link>
+            <Link
+              to="/reserva/confirmacion"
+              className={`btn-pagar ${enviando ? 'btn-pagar-cargando' : ''}`}
+              onClick={pagar}
+              aria-disabled={enviando}
+            >
+              {enviando ? 'Procesando...' : 'Pagar'}
+            </Link>
             <Link to="/reserva/agenda" className="btn-volver-pago">Volver</Link>
           </div>
         </div>
@@ -174,37 +202,28 @@ function Pago() {
               </strong>
               <span className="nombre-doc-resumen">{resumen?.doctor ? resumen.doctor.toUpperCase() : 'DOCTOR POR DEFINIR'}</span>
               {resumen && <span>{resumen.fecha} · {resumen.hora} · {resumen.modalidad}</span>}
-              <span className="precio-item-resumen">{dinero(PRECIO_CITA)}</span>
+              <span className="precio-item-resumen">{dinero(totales.precioBase)}</span>
             </div>
           </div>
-
-          <div className="divisor-resumen"></div>
-
-          <details className="bloque-cupon">
-            <summary>TIENES UN CUPÓN?</summary>
-            <div className="input-cupon-box">
-              <input type="text" placeholder="Ingresa cupón" />
-              <button type="button">Aplicar</button>
-            </div>
-          </details>
 
           <div className="divisor-resumen"></div>
 
           <div className="fila-total-linea">
             <span>SUBTOTAL</span>
-            <span>{dinero(PRECIO_CITA)}</span>
+            <span>{dinero(totales.subtotal)}</span>
           </div>
           <div className="fila-total-linea">
-            <span>I.V.A</span>
-            <span>{dinero(iva)}</span>
+            <span>I.V.A (19%)</span>
+            <span>{dinero(totales.iva)}</span>
           </div>
 
           <div className="divisor-resumen"></div>
 
           <div className="fila-total-final">
             <strong>TOTAL</strong>
-            <strong>{dinero(PRECIO_CITA + iva)}</strong>
+            <strong>{dinero(totales.total)}</strong>
           </div>
+          <p className="nota-total-pago">El monto definitivo se calcula y valida al guardar la reserva.</p>
         </aside>
       </section>
     </main>

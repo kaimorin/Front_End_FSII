@@ -4,13 +4,9 @@ import { MemoryRouter, useNavigate } from 'react-router'
 import userEvent from '@testing-library/user-event'
 import Agenda from './Agenda.jsx'
 
-// Mock de react-router para espiar la navegación entre pasos
 vi.mock('react-router', async (importOriginal) => {
   const actual = await importOriginal()
-  return {
-    ...actual,
-    useNavigate: vi.fn(),
-  }
+  return { ...actual, useNavigate: vi.fn() }
 })
 
 describe('Agenda', () => {
@@ -20,98 +16,80 @@ describe('Agenda', () => {
     vi.clearAllMocks()
     vi.mocked(useNavigate).mockReturnValue(mockNavigate)
     sessionStorage.clear()
+    global.fetch = vi.fn().mockRejectedValue(new Error('API no disponible en la prueba'))
   })
 
-  it('renderiza la barra de pasos y las tarjetas informativas de los doctores', () => {
-    render(
-      <MemoryRouter>
-        <Agenda />
-      </MemoryRouter>
-    )
+  it('renderiza la barra de pasos y las tarjetas de especialistas', () => {
+    render(<MemoryRouter><Agenda /></MemoryRouter>)
 
-    // Validar pasos del asistente de agendamiento
     const pasoActivo = screen.getByText('2. Doctor y Especialidad')
     expect(pasoActivo).toBeInTheDocument()
     expect(pasoActivo).toHaveClass('paso-activo')
 
-    // Validar listado de especialistas médicos
     expect(screen.getByText('Maria de Judas')).toBeInTheDocument()
     expect(screen.getByText("Maximo Tul 'Onazzo")).toBeInTheDocument()
     expect(screen.getByText("Mario Di 'West")).toBeInTheDocument()
     expect(screen.getByText("Shaqueal O'neal")).toBeInTheDocument()
-
-    // Validar selectores base
-    expect(screen.getByRole('combobox')).toBeInTheDocument()
+    expect(screen.getAllByText(/Valor base:/i).length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: /volver/i })).toHaveAttribute('href', '/reserva/datos')
   })
 
-  it('permite cambiar la modalidad de atención médica y el especialista', async () => {
-    render(
-      <MemoryRouter>
-        <Agenda />
-      </MemoryRouter>
-    )
+  it('permite cambiar la modalidad y el especialista', async () => {
+    render(<MemoryRouter><Agenda /></MemoryRouter>)
 
     const radioPresencial = screen.getByRole('radio', { name: /presencial/i })
     const radioOnline = screen.getByRole('radio', { name: /online/i })
-
     expect(radioPresencial).toBeChecked()
-    
-    // Cambiar modalidad
+
     await userEvent.click(radioOnline)
     expect(radioOnline).toBeChecked()
 
-    // Seleccionar otro doctor
     const radioMaximo = screen.getByRole('radio', { name: /maximo tul 'onazzo/i })
     await userEvent.click(radioMaximo)
     expect(radioMaximo).toBeChecked()
+    // Maximo solo ofrece atención presencial, por eso la modalidad se ajusta.
+    expect(screen.getByRole('radio', { name: /presencial/i })).toBeChecked()
+    expect(screen.queryByRole('radio', { name: /online/i })).not.toBeInTheDocument()
   })
 
-  it('permite interactuar con los controles del widget de calendario y selectores de rueda', async () => {
-    render(
-      <MemoryRouter>
-        <Agenda />
-      </MemoryRouter>
-    )
+  it('permite interactuar con el calendario y el selector de hora', async () => {
+    render(<MemoryRouter><Agenda /></MemoryRouter>)
 
-    // Simulamos interacción con los botones del mes en el calendario
-    const botonesMes = screen.getAllByRole('button')
-    const botonMesAnterior = botonesMes.find(b => b.textContent === '<')
-    const botonMesSiguiente = botonesMes.find(b => b.textContent === '>')
+    await userEvent.click(screen.getByRole('button', { name: /mes siguiente/i }))
+    await userEvent.click(screen.getByRole('button', { name: /mes anterior/i }))
+    await userEvent.click(screen.getByRole('button', { name: /hoy/i }))
 
-    if (botonMesSiguiente) await userEvent.click(botonMesSiguiente)
-    if (botonMesAnterior) await userEvent.click(botonMesAnterior)
-
-    // Buscar y clickear el botón estático HOY del calendario
-    const botonHoy = screen.getByRole('button', { name: /hoy/i })
-    await userEvent.click(botonHoy)
-
-    // Interactuar con la rueda horaria (Ejemplo: Cambiar a meridiano PM)
     const opcionPm = screen.getByText('PM')
     await userEvent.click(opcionPm)
     expect(opcionPm).toHaveClass('activa')
   })
 
-  it('guarda la información de la cita en sessionStorage y redirige al envío exitoso', async () => {
-    render(
-      <MemoryRouter>
-        <Agenda />
-      </MemoryRouter>
-    )
+  it('guarda el ID del especialista y la fecha ISO antes de continuar', async () => {
+    render(<MemoryRouter><Agenda /></MemoryRouter>)
 
-    // Completamos el campo obligatorio de especialidad en el formulario
-    const selectEspecialidad = screen.getByRole('combobox')
-    await userEvent.selectOptions(selectEspecialidad, 'nutricion-deportiva')
+    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
 
-    // Enviamos el formulario gatillando la función de redirección
-    const botonSiguiente = screen.getByRole('button', { name: /siguiente/i })
-    await userEvent.click(botonSiguiente)
-
-    // Validamos almacenamiento seguro local
-    const citaGuardada = sessionStorage.getItem('cita')
+    const citaGuardada = JSON.parse(sessionStorage.getItem('cita'))
     expect(citaGuardada).not.toBeNull()
-
-    // Comprobamos la navegación hacia la pasarela de pagos
+    expect(citaGuardada.especialistaId).toBe(1)
+    expect(citaGuardada.doctor).toBe('Maria de Judas')
+    expect(citaGuardada.fechaISO).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(citaGuardada.precioBase).toBe(35000)
     expect(mockNavigate).toHaveBeenCalledWith('/reserva/pago')
+  })
+
+  it('muestra la alerta estilizada si se elige una fecha pasada', async () => {
+    render(<MemoryRouter><Agenda /></MemoryRouter>)
+
+    const fechaAnterior = new Date()
+    fechaAnterior.setDate(1)
+    fechaAnterior.setMonth(fechaAnterior.getMonth() - 1)
+    const mesAnterior = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(fechaAnterior)
+    await userEvent.click(screen.getByRole('button', { name: /mes anterior/i }))
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`1 de ${mesAnterior}`, 'i') }))
+
+    const alerta = screen.getByRole('alert')
+    expect(alerta).toHaveClass('alerta-error')
+    expect(alerta).toHaveTextContent(/fecha que elegiste ya pasó/i)
   })
 })

@@ -4,7 +4,7 @@ const MESES = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ]
 
-export const PRECIO_CITA = 35000 // el back guarda siempre 35000 como precioBase
+export const PRECIO_CITA = 35000 // precio de respaldo; cada especialista puede definir su propio valor en el back
 export const ESTADOS = ['Pendiente', 'Confirmado', 'Atendido', 'Cancelado']
 
 export const ESPECIALIDADES = {
@@ -35,9 +35,21 @@ export function dinero(n) {
   return '$' + Number(n || 0).toLocaleString('en-US')
 }
 
-// Precio base + 19% de IVA
+// Calcula los importes visibles en el resumen. El backend repite este cálculo
+// usando el precio guardado para el especialista y es la fuente definitiva.
+export function calcularTotales(precioBase = PRECIO_CITA, descuento = 0) {
+  const base = Math.max(Number(precioBase) || PRECIO_CITA, 0)
+  const rebaja = Math.min(Math.max(Number(descuento) || 0, 0), base)
+  const subtotal = base - rebaja
+  const iva = Math.round(subtotal * 0.19)
+  return { precioBase: base, descuento: rebaja, subtotal, iva, total: subtotal + iva }
+}
+
+// Para citas nuevas usa el total guardado por el backend. En registros antiguos
+// calcula el importe a partir del precio base que ya existía.
 export function totalCita(cita) {
-  return Math.round((cita.precioBase || PRECIO_CITA) * 1.19)
+  if (Number(cita?.total) > 0) return Number(cita.total)
+  return calcularTotales(cita?.precioBase || PRECIO_CITA).total
 }
 
 export function claseEstado(estado) {
