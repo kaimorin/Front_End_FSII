@@ -9,19 +9,19 @@ function Footer() {
       <div className="footer-izq">
         <h3 className="titulo-cambio">Estas Listo para el Cambio?</h3>
         <p>Estamos preparados para empezar!!!</p>
-        <Link to="reserva/datos" className="btn-agenda-oscuro">Agenda Ahora</Link>
+        <Link to="/reserva/datos" className="btn-agenda-oscuro">Agenda Ahora</Link>
       </div>
 
       <div className="footer-der">
         <div className="redes-con-texto">
             <div className="redes-iconos">
-  <a href="https://wa.me/56912345678" target="_blank" className="icono-rd">
+  <a href="https://wa.me/56912345678" target="_blank" rel="noopener noreferrer" className="icono-rd">
     <img src={imgWs} alt="WhatsApp"/>
   </a>
-  <a href="https://facebook.com" target="_blank" className="icono-rd">
+  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="icono-rd">
     <img src={fb} alt="Facebook"/>
   </a>
-  <a href="https://instagram.com" target="_blank" className="icono-rd">
+  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="icono-rd">
     <img src={ig} alt="Instagram"/>
   </a>
 </div>

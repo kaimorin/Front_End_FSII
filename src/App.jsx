@@ -21,8 +21,8 @@ import CitasHorario from './pages/CitasHorario.jsx'
 import Pacientes from './pages/Pacientes.jsx'
 import Especialistas from './pages/Especialistas.jsx'
 import Reportes from './pages/Reportes.jsx'
-import './App.css'
 import RutaAdmin from './pages/RutaAdmin.jsx'
+import './App.css'
 
 export default function App() {
   return (
@@ -53,7 +53,7 @@ export default function App() {
           <Route path="citas" element={<CitasHorario />} />
           <Route path="pacientes" element={<Pacientes />} />
           <Route path="especialistas" element={<Especialistas />} />
-          <Route path="reportes" element={<Reportes />} />a
+          <Route path="reportes" element={<Reportes />} />
         </Route>
       </Route>
     </Routes>

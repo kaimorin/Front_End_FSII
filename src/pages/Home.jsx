@@ -104,7 +104,7 @@ function Home() {
               <img src={ye} alt="Kanye Di West"/>
             </div>
             <h4>Kanye Di West</h4>
-            <p>Especializado en salud digestiva y nutrición integrativa. Su trabajo busca restaurar el equilibrio de la microbiota intestinal y alimentarias para mejorar la calidad de vida.</p>
+            <p>Especializado en salud digestiva y nutrición integrativa. Su trabajo busca restaurar el equilibrio de la microbiota intestinal y corregir hábitos alimentarios para mejorar la calidad de vida.</p>
           </article>
         </div>
 

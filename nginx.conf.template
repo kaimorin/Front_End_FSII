@@ -36,9 +36,16 @@ server {
     # ── Deshabilitar listado de directorios ───────────────────────────
     autoindex off;
 
-    # ── Cache de assets estáticos ─────────────────────────────────────
-    location ~* \.(js|css|png|jpg|jpeg|svg|ico|webp|woff2?)$ {
-        expires 0;
-        add_header Cache-Control "no-cache";
+    # ── Caché ──────────────────────────────────────────────────────────
+    # `expires` no usa add_header, así que estos bloques conservan las cabeceras de seguridad.
+    # Los archivos de /assets/ llevan hash en el nombre: se pueden cachear un año.
+    location /assets/ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # index.html nunca se cachea para que un deploy nuevo se vea de inmediato.
+    location = /index.html {
+        expires -1;
     }
 }

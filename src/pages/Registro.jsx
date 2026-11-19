@@ -96,7 +96,7 @@ function Registro(){
        
           <div className="campo">
             <label htmlFor="correo">Correo Electronico:</label>
-            <input type="email" id="correo" name="correo" placeholder="xxxxxxxxxxxxxxx@hotmail.com*"/>
+            <input type="email" id="correo" name="correo" placeholder="tucorreo@gmail.com*"/>
             <span className="error-texto" id="err-correo">{errores.correo}</span>
           </div>
 
@@ -120,7 +120,7 @@ function Registro(){
               <label htmlFor="reg-telefono">Numero tel:</label>
               <div className="input-prefijo-tel">
                 <span className="prefijo">+56 9</span>
-                <input type="tel" id="reg-telefono" name="telefono" placeholder="xxxxxxxxx"/>
+                <input type="tel" id="reg-telefono" name="telefono" placeholder="12345678"/>
               </div>
               <span className="error-texto" id="err-telefono">{errores.telefono}</span>
             </div>

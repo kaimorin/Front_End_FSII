@@ -1,9 +1,6 @@
 services:
   front:
-    build:
-      context: .
-      args:
-        VITE_API_URL: /api
+    build: .
     image: nutrivida-front:latest
     container_name: nutrivida-front
     ports:

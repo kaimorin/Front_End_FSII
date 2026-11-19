@@ -81,7 +81,7 @@ function Datos() {
         <section className="pasos-agenda">
             <div className="paso paso-activo">1. Datos Personales</div>
             <div className="paso">2. Doctor y Especialidad</div>
-            <div className="paso">3. Pago y facturacion</div>
+            <div className="paso">3. Pago y Facturacion</div>
         </section>
 
 
