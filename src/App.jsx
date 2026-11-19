@@ -53,7 +53,7 @@ export default function App() {
           <Route path="citas" element={<CitasHorario />} />
           <Route path="pacientes" element={<Pacientes />} />
           <Route path="especialistas" element={<Especialistas />} />
-          <Route path="reportes" element={<Reportes />} />
+          <Route path="reportes" element={<Reportes />} />a
         </Route>
       </Route>
     </Routes>

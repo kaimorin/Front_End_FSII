@@ -1,38 +1,41 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Flujo de Agendamiento - Paso 2 (Doctor y Especialidad)', () => {
-  
+
   test('Debe seleccionar doctor, modalidad, especialidad, fecha/hora y avanzar al Paso 3', async ({ page }) => {
     // 1. Navegar a la vista con la ruta absoluta y el HashRouter
     await page.goto('/#/reserva/agenda');
 
-    // 2. Seleccionar Doctor (haciendo clic en el label que contiene el texto visible)
-    await page.locator('label').filter({ hasText: "Maximo Tul 'Onazzo" }).click();
+    // 2. Seleccionar Doctor: Maria SÍ tiene Online (Maximo es solo Presencial)
+    await page.locator('label').filter({ hasText: 'Maria de Judas' }).click();
 
-    // 3. Seleccionar Modalidad (haciendo clic en el label que dice Online)
+    // 3. Seleccionar Modalidad Online
     await page.locator('label').filter({ hasText: 'Online' }).click();
 
-    // 4. Seleccionar Especialidad mediante su ID
-    await page.locator('#selectEspecialidad').selectOption('salud-digestiva');
+    // 4. NO hay #selectEspecialidad en Agenda.jsx.
+    // La especialidad viene del doctor: Maria = Nutrición Clínica.
+    // Se valida abajo en sessionStorage.
 
-    // 5. Interacción con el Widget de Calendario personalizado (seleccionamos el día 9 como en la imagen)
-    const diaSeleccionar = page.locator('.cal-matriz-numeros span:not(.dia-apagado)', { hasText: '9' }).first();
+    // 5. Calendario: vamos al mes siguiente para asegurar que el día sea futuro
+    // y no caiga en una fecha pasada (el día 9 de este mes ya pasó).
+    await page.getByRole('button', { name: 'Mes siguiente' }).click();
+
+    // El calendario usa <button class="cal-dia">, no <span>.
+    // Elegimos el primer día hábil (no apagado, no domingo) del mes siguiente.
+    const diaSeleccionar = page.locator('.cal-dia:not(.dia-apagado):not(.dia-domingo)').first();
     await diaSeleccionar.click();
-    
+
     // Validamos que se le haya aplicado la clase de selección
     await expect(diaSeleccionar).toHaveClass(/dia-marcado/);
 
     // 6. Interacción con el Widget de Hora (Ruedas)
     const ruedaHora = page.locator('.hora-selector-rueda .col-rueda').nth(0);
-    // Usamos { exact: true } para evitar colisiones con otros números
     await ruedaHora.getByText('11', { exact: true }).click();
 
     const ruedaMinutos = page.locator('.hora-selector-rueda .col-rueda').nth(1);
-    // Seleccionamos '00' como se ve en la interfaz
     await ruedaMinutos.getByText('00', { exact: true }).click();
 
     const ruedaAmPm = page.locator('.col-meridiano');
-    // Seleccionamos AM
     await ruedaAmPm.locator('span', { hasText: 'AM' }).click();
 
     // 7. Enviar el formulario
@@ -44,12 +47,15 @@ test.describe('Flujo de Agendamiento - Paso 2 (Doctor y Especialidad)', () => {
     // 9. Validar persistencia en SessionStorage
     const cita = await page.evaluate(() => sessionStorage.getItem('cita'));
     expect(cita).toBeTruthy();
-    
+
     const parsedCita = JSON.parse(cita);
     expect(parsedCita).toMatchObject({
-      doctor: 'Maximo Tul Onazzo',
+      doctor: 'Maria de Judas',
       modalidad: 'Online',
-      especialidad: 'salud-digestiva'
+      especialidad: 'Nutrición Clínica',
     });
+    // La app guarda especialistaId y fechaISO, que Pago.jsx exige después
+    expect(parsedCita.especialistaId).toBe(1);
+    expect(parsedCita.fechaISO).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
