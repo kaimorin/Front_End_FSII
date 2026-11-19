@@ -67,7 +67,8 @@ describe('Agenda', () => {
   it('guarda el ID del especialista y la fecha ISO antes de continuar', async () => {
     render(<MemoryRouter><Agenda /></MemoryRouter>)
 
-    await userEvent.click(screen.getByRole('button', { name: /siguiente/i }))
+    // ARREGLADO: /^Siguiente$/ para que no calce con "Mes siguiente"
+    await userEvent.click(screen.getByRole('button', { name: /^Siguiente$/ }))
 
     const citaGuardada = JSON.parse(sessionStorage.getItem('cita'))
     expect(citaGuardada).not.toBeNull()
@@ -86,7 +87,8 @@ describe('Agenda', () => {
     fechaAnterior.setMonth(fechaAnterior.getMonth() - 1)
     const mesAnterior = new Intl.DateTimeFormat('es-ES', { month: 'long' }).format(fechaAnterior)
     await userEvent.click(screen.getByRole('button', { name: /mes anterior/i }))
-    await userEvent.click(screen.getByRole('button', { name: new RegExp(`1 de ${mesAnterior}`, 'i') }))
+    // ARREGLADO: ^...$ para que no calce con 11, 21 y 31 del mismo mes
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(`^1 de ${mesAnterior}$`, 'i') }))
 
     const alerta = screen.getByRole('alert')
     expect(alerta).toHaveClass('alerta-error')
