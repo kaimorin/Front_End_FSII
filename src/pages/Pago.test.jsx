@@ -16,7 +16,7 @@ vi.mock('../api', async (importOriginal) => ({
 }))
 
 const cita = {
-  doctor: 'Maria de Judass',
+  doctor: 'Maria de Judas',
   modalidad: 'Online',
   especialidad: 'control-peso',
   fecha: 'Lunes, 10 de marzo de 2025',
